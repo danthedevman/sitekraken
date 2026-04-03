@@ -16,6 +16,8 @@ import fastifyStatic from "@fastify/static";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+console.log(__dirname)
+
 const app = Fastify({
   logger: true,
   trustProxy: true,

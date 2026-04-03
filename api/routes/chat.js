@@ -9,10 +9,21 @@ const MAX_THREAD_ID_LENGTH = 200;
 const MAX_ADDITIONAL_INSTRUCTIONS_LENGTH = 4000;
 
 const SAFE_FALLBACK_REPLY =
-  "I’m sorry, I don’t have that information. Is there something else I can help you with.";
+  "I’m sorry, I don’t have that information. Is there something else I can help you with?";
 
 const UNSUPPORTED_ACTION_REPLY =
-  "I’m sorry, I can’t do that here. Is there something else I can help you with.";
+  "I’m sorry, I can’t do that here. Is there something else I can help you with?";
+
+const ALLOWED_NON_KNOWLEDGE_REPLIES = new Map([
+  ["hi", "Hi! I can help answer questions based on the information available here."],
+  ["hello", "Hello! I can help answer questions based on the information available here."],
+  ["hey", "Hey! I can help answer questions based on the information available here."],
+  ["help", "I can help answer questions based on the information available here."],
+  ["what can you help with?", "I can help answer questions based on the information available here."],
+  ["what do you do?", "I can answer questions based on the information available here."],
+  ["thanks", "You’re welcome!"],
+  ["thank you", "You’re welcome!"]
+]);
 
 function safeThreadId(threadId) {
   if (!threadId || typeof threadId !== "string") {
@@ -47,6 +58,24 @@ function extractOutputText(response) {
   return "Sorry, I couldn't generate a response.";
 }
 
+function extractFileSearchResults(response) {
+  if (!Array.isArray(response?.output)) return [];
+
+  const results = [];
+
+  for (const item of response.output) {
+    if (item?.type === "file_search_call" && Array.isArray(item.results)) {
+      results.push(...item.results.filter(Boolean));
+    }
+  }
+
+  return results;
+}
+
+function hasUsableFileSearchResults(response) {
+  return extractFileSearchResults(response).length > 0;
+}
+
 function containsSourceLeak(text) {
   if (!text) return false;
 
@@ -74,6 +103,11 @@ function containsUnsupportedCapabilityOffer(text) {
     /\bi can forward\b/i,
     /\bsend it to you directly\b/i
   ].some((pattern) => pattern.test(text));
+}
+
+function getAllowedNonKnowledgeReply(message) {
+  const normalized = String(message || "").trim().toLowerCase();
+  return ALLOWED_NON_KNOWLEDGE_REPLIES.get(normalized) || null;
 }
 
 async function rewriteForCustomerSafeOutput(openai, question, answer) {
@@ -227,7 +261,10 @@ function getWorkspaceVectorStoreIds(workspace) {
   return [];
 }
 
-function normalizeInstructionText(value, maxLength = MAX_ADDITIONAL_INSTRUCTIONS_LENGTH) {
+function normalizeInstructionText(
+  value,
+  maxLength = MAX_ADDITIONAL_INSTRUCTIONS_LENGTH
+) {
   if (typeof value !== "string") return "";
   return value.trim().slice(0, maxLength);
 }
@@ -251,22 +288,33 @@ function getWorkspaceInstructions(workspace) {
     `
 You are a concise customer-facing website assistant.
 
-Rules:
-- Answer using plain helpful language.
+You must obey these rules:
+- Only answer using:
+  1. information found in retrieved file search results, and
+  2. explicit workspace additional instructions that define behavior, tone, routing, or constraints.
+- For substantive factual answers, the answer must be supported by retrieved file search results.
+- Do not use general world knowledge, background knowledge, or guesses.
+- Do not infer facts that are not clearly supported by retrieved content.
+- If retrieved content is missing, irrelevant, or insufficient for a substantive answer, you must reply exactly:
+"${SAFE_FALLBACK_REPLY}"
+
+Formatting rules:
+- Use plain helpful language.
 - You may use simple markdown when it improves clarity:
   - headings with #
   - bullet lists with -
   - markdown links like [label](https://example.com)
   - inline code
-- If the user asks for a link, resume, portfolio, contact page, or resource, prefer returning the exact public URL when available in knowledge.
-- Preserve useful link text and URLs from retrieved content when they directly answer the question.
-- Do not mention internal tools, sources, citations, vector stores, or retrieval.
+
+Safety and capability rules:
+- Do not mention internal tools, sources, citations, vector stores, files, retrieval, or knowledge base structure.
 - Do not claim actions you cannot perform.
 - Do not say you can send, attach, upload, or deliver files.
+
+Behavior rules:
+- If the user asks for a link, resume, portfolio, contact page, or resource, only return it when it is explicitly present in retrieved content.
 - Keep answers aligned with this chatbot setup when relevant:
 ${customInitialMessage ? `- Assistant persona/context: ${customInitialMessage}` : "- Assistant persona/context: helpful professional assistant."}
-- If unsure, say:
-"${SAFE_FALLBACK_REPLY}"
 - If asked to do something unsupported here, say:
 "${UNSUPPORTED_ACTION_REPLY}"
 `.trim()
@@ -275,7 +323,7 @@ ${customInitialMessage ? `- Assistant persona/context: ${customInitialMessage}` 
   if (additionalInstructions) {
     instructionSections.push(
       `
-Additional workspace-specific instructions:
+Explicit workspace additional instructions:
 ${additionalInstructions}
 `.trim()
     );
@@ -364,17 +412,27 @@ export default async function chatRoutes(fastify) {
       });
 
       const firstPassReply = extractOutputText(response);
+      const hasFileGrounding = hasUsableFileSearchResults(response);
+      const allowedNonKnowledgeReply = getAllowedNonKnowledgeReply(message);
 
-      let replyText = await rewriteForCustomerSafeOutput(
-        openai,
-        message,
-        firstPassReply
-      );
+      let replyText;
 
-      if (containsSourceLeak(replyText)) {
+      if (!hasFileGrounding && allowedNonKnowledgeReply) {
+        replyText = allowedNonKnowledgeReply;
+      } else if (!hasFileGrounding) {
         replyText = SAFE_FALLBACK_REPLY;
-      } else if (containsUnsupportedCapabilityOffer(replyText)) {
-        replyText = UNSUPPORTED_ACTION_REPLY;
+      } else {
+        replyText = await rewriteForCustomerSafeOutput(
+          openai,
+          message,
+          firstPassReply
+        );
+
+        if (containsSourceLeak(replyText)) {
+          replyText = SAFE_FALLBACK_REPLY;
+        } else if (containsUnsupportedCapabilityOffer(replyText)) {
+          replyText = UNSUPPORTED_ACTION_REPLY;
+        }
       }
 
       const now = new Date();
