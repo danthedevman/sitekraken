@@ -21,25 +21,8 @@ const app = Fastify({
   trustProxy: true,
 });
 
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
-  .split(",")
-  .map((v) => v.trim())
-  .filter(Boolean);
-
 await app.register(cors, {
-  origin: function (origin, cb) {
-    if (!origin) {
-      cb(null, true);
-      return;
-    }
-
-    if (allowedOrigins.includes(origin)) {
-      cb(null, true);
-      return;
-    }
-
-    cb(new Error("Origin not allowed"), false);
-  },
+  origin: true,
   credentials: false,
 });
 
@@ -52,7 +35,7 @@ await app.register(view, {
 
 await app.register(fastifyStatic, {
   root: path.join(__dirname, "public"),
-  prefix: "/public/"
+  prefix: "/public/",
 });
 
 await app.register(mongoPlugin);

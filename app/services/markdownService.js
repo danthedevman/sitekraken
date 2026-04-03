@@ -1,20 +1,18 @@
-import fs from 'fs';
-import path from 'path';
+export function buildKnowledgeMarkdown({ title, body }) {
+  const cleanTitle = String(title || '').trim();
+  const cleanBody = String(body || '').trim();
 
-export function saveKnowledgeAsMarkdown({ title, body, workspaceId, knowledgeId }) {
-  const safeTitle = title.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
-  const dir = path.join(process.cwd(), 'uploads', 'knowledge');
+  return `# ${cleanTitle}
 
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-
-  const filepath = path.join(dir, `${workspaceId}-${knowledgeId}-${safeTitle}.md`);
-  const content = `# ${title}
-
-${body}
+${cleanBody}
 `;
+}
 
-  fs.writeFileSync(filepath, content, 'utf8');
-  return filepath;
+export function buildKnowledgeFilename({ title, workspaceId, knowledgeId }) {
+  const safeTitle = String(title || 'knowledge-entry')
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase();
+
+  return `${workspaceId}-${knowledgeId}-${safeTitle || 'knowledge-entry'}.md`;
 }

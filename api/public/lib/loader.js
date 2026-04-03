@@ -14,7 +14,18 @@
     (currentScript.getAttribute("data-api-key") ||
       currentScript.getAttribute("api-key"));
 
-  var loaderBase = "http://localhost:4001";
+  var loaderBase =
+    (currentScript &&
+      currentScript.src &&
+      (function () {
+        try {
+          var u = new URL(currentScript.src, w.location.href);
+          return u.origin;
+        } catch (e) {
+          return null;
+        }
+      })()) ||
+    "http://localhost:4001";
 
   if (!apiKey) {
     console.error("[SiteKraken] Missing data-api-key on embed script.");
@@ -23,9 +34,12 @@
 
   function mergeConfig(config) {
     if (!config || typeof config !== "object") return;
+
     w.EmbeddedChatbotConfig = {
       ...(w.EmbeddedChatbotConfig || {}),
       ...config,
+      apiKey: apiKey,
+      apiUrl: loaderBase,
     };
   }
 
@@ -53,7 +67,7 @@
     });
   }
 
-  function loadScript(src, isModule) {
+  function loadScript(src, isModule, moduleConfig) {
     return new Promise(function (resolve, reject) {
       if (!src) {
         reject(new Error("Missing scriptUrl"));
@@ -70,6 +84,11 @@
       script.src = src;
       script.async = true;
       script.setAttribute("data-sk-src", src);
+      script.setAttribute("data-api-key", apiKey);
+
+      if (moduleConfig && typeof moduleConfig === "object") {
+        script.setAttribute("data-module-config", JSON.stringify(moduleConfig));
+      }
 
       if (isModule) {
         script.type = "module";
@@ -97,6 +116,7 @@
       method: "GET",
       headers: {
         Accept: "application/json",
+        "x-api-key": apiKey,
       },
       credentials: "omit",
     }).then(async function (res) {
@@ -145,7 +165,11 @@
 
             return Promise.all(stylesheets.map(loadStylesheet)).then(
               function () {
-                return loadScript(mod.scriptUrl, Boolean(mod.module));
+                return loadScript(
+                  mod.scriptUrl,
+                  Boolean(mod.module),
+                  mod.config || {}
+                );
               }
             );
           });

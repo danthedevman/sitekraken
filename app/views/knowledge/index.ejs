@@ -28,8 +28,19 @@
             </td>
             <td><code><%= entry.openaiFileId || '-' %></code></td>
             <td class="text-end">
-              <a href="/workspaces/<%= workspace._id %>/knowledge/<%= entry._id %>" class="btn btn-sm btn-outline-primary">View</a>
-              <a href="/workspaces/<%= workspace._id %>/knowledge/<%= entry._id %>/edit" class="btn btn-sm btn-outline-secondary">Edit</a>
+              <div class="d-inline-flex gap-2">
+                <a href="/workspaces/<%= workspace._id %>/knowledge/<%= entry._id %>" class="btn btn-sm btn-outline-primary">View</a>
+                <a href="/workspaces/<%= workspace._id %>/knowledge/<%= entry._id %>/edit" class="btn btn-sm btn-outline-secondary">Edit</a>
+
+                <form
+                  method="POST"
+                  action="/workspaces/<%= workspace._id %>/knowledge/<%= entry._id %>?_method=DELETE"
+                  class="d-inline"
+                  onsubmit="return confirm('Delete this knowledge entry and its associated vector files?');"
+                >
+                  <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
+              </div>
             </td>
           </tr>
         <% }) %>

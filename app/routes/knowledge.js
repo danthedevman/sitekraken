@@ -6,7 +6,8 @@ import {
   create,
   show,
   editForm,
-  update
+  update,
+  destroy
 } from '../controllers/knowledgeController.js';
 
 const router = Router({ mergeParams: true });
@@ -17,5 +18,6 @@ router.post('/', ensureAuth, create);
 router.get('/:knowledgeId', ensureAuth, show);
 router.get('/:knowledgeId/edit', ensureAuth, editForm);
 router.put('/:knowledgeId', ensureAuth, update);
+router.delete('/:knowledgeId', ensureAuth, destroy);
 
 export default router;

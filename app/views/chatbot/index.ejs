@@ -46,19 +46,32 @@
               <textarea name="initialMessage" class="form-control" rows="4"><%= chatbot.config.initialMessage %></textarea>
             </div>
 
+            <div class="col-12">
+              <label class="form-label">Additional Instructions</label>
+              <textarea
+                name="additionalInstructions"
+                class="form-control"
+                rows="6"
+                placeholder="Example:&#10;- Keep answers brief&#10;- If asked about pricing, send users to /pricing&#10;- Use a friendly and professional tone"
+              ><%= chatbot.config.additionalInstructions || '' %></textarea>
+              <div class="form-text">
+                Extra assistant behavior instructions for this workspace. These are not shown to end users.
+              </div>
+            </div>
+
             <div class="col-md-6">
               <label class="form-label">Quick Messages (one per line)</label>
-              <textarea name="quickMessages" class="form-control" rows="8"><%= chatbot.config.quickMessages.join('') %></textarea>
+              <textarea name="quickMessages" class="form-control" rows="8"><%= chatbot.config.quickMessages.join('\n') %></textarea>
             </div>
 
             <div class="col-md-6">
               <label class="form-label">Footer Links (Label|Href per line)</label>
-              <textarea name="footerLinks" class="form-control" rows="8"><%= chatbot.config.footerLinks.map(link => `${link.label}|${link.href}`).join('') %></textarea>
+              <textarea name="footerLinks" class="form-control" rows="8"><%= chatbot.config.footerLinks.map(link => `${link.label}|${link.href}`).join('\n') %></textarea>
             </div>
 
             <div class="col-12">
               <label class="form-label">Allowed Domains (one per line)</label>
-              <textarea name="allowedDomains" class="form-control" rows="5" placeholder="example.com&#10;jobs.example.com"><%= (chatbot.allowedDomains || []).join('') %></textarea>
+              <textarea name="allowedDomains" class="form-control" rows="5" placeholder="example.com&#10;jobs.example.com"><%= (workspace.allowedDomains || []).join('\n') %></textarea>
               <div class="form-text">Store bare hostnames only. Example: <code>example.com</code></div>
             </div>
           </div>
@@ -74,7 +87,7 @@
       <div class="card-body">
         <h2 class="h5">Embed API key</h2>
         <p class="small text-muted mb-2">This key is generated per workspace.</p>
-        <div class="bg-light border rounded p-2 small"><code><%= chatbot.apiKey %></code></div>
+        <div class="bg-light border rounded p-2 small"><code><%= workspace.apiKey %></code></div>
 
         <form class="mt-3" method="POST" action="/workspaces/<%= workspace._id %>/chatbot/regenerate-key">
           <button class="btn btn-outline-warning btn-sm">Regenerate API key</button>

@@ -1,23 +1,18 @@
 import crypto from "node:crypto";
+import { resolveWorkspaceAccess } from "../lib/workspace-auth.js";
 
 const MAX_MESSAGE_LENGTH = 2000;
 const WINDOW_MS = 60 * 1000;
 const MAX_REQUESTS_PER_WINDOW = 10;
 const MIN_SECONDS_BETWEEN_MESSAGES = 2;
 const MAX_THREAD_ID_LENGTH = 200;
+const MAX_ADDITIONAL_INSTRUCTIONS_LENGTH = 4000;
 
 const SAFE_FALLBACK_REPLY =
   "I’m sorry, I don’t have that information. Is there something else I can help you with.";
 
 const UNSUPPORTED_ACTION_REPLY =
   "I’m sorry, I can’t do that here. Is there something else I can help you with.";
-
-function getVectorStoreIds() {
-  return (process.env.OPENAI_VECTOR_STORE_IDS || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
 
 function safeThreadId(threadId) {
   if (!threadId || typeof threadId !== "string") {
@@ -56,12 +51,6 @@ function containsSourceLeak(text) {
   if (!text) return false;
 
   return [
-    /\bfile(s)?\b/i,
-    /\bfilename(s)?\b/i,
-    /\bdocument(s)?\b/i,
-    /\bpdf(s)?\b/i,
-    /\battachment(s)?\b/i,
-    /\bupload(ed|s)?\b/i,
     /\bsource(s)?\b/i,
     /\bcitation(s)?\b/i,
     /\bretriev(ed|al|ing)\b/i,
@@ -80,14 +69,9 @@ function containsUnsupportedCapabilityOffer(text) {
   if (!text) return false;
 
   return [
-    /\bi can (send|share|attach|upload|provide|deliver)\b/i,
-    /\bprovide .* for download\b/i,
-    /\bavailable for download\b/i,
-    /\blet me know if you'd like me to\b/i,
-    /\bi can give you\b/i,
+    /\bi can (send|share|attach|upload|deliver)\b/i,
     /\bi can email\b/i,
     /\bi can forward\b/i,
-    /\bi can download\b/i,
     /\bsend it to you directly\b/i
   ].some((pattern) => pattern.test(text));
 }
@@ -99,13 +83,18 @@ async function rewriteForCustomerSafeOutput(openai, question, answer) {
 You are a response rewriter for a customer-facing assistant.
 
 Rules:
-- Never mention files, file names, document names, titles, PDFs, resumes, attachments, uploads, sources, citations, retrieval, search results, vector stores, internal tools, or knowledge base structure.
+- Never mention files, file names, document names, titles, attachments, uploads, sources, citations, retrieval, search results, vector stores, internal tools, or knowledge base structure.
 - Never say phrases like "according to the file", "the document says", "the uploaded file mentions", or similar.
-- Never imply system capabilities beyond returning plain text in chat.
-- Never offer to send, share, attach, upload, provide for download, or deliver files or assets.
-- Remove any unsupported offer, invitation, or call to action.
+- Never imply system capabilities beyond returning text in chat.
+- Never claim you can send, share, attach, upload, deliver, email, or forward files or assets.
+- You MAY keep public URLs already present in the draft answer.
+- You MAY preserve simple markdown formatting when it improves clarity:
+  - headings with #
+  - bullet lists with -
+  - inline code
+  - markdown links like [label](https://example.com) and mailto links
+- Do NOT invent links.
 - Preserve the original meaning exactly when possible.
-- Do not add new facts.
 - Keep the answer concise and natural.
 - If the answer cannot be safely rewritten without implying hidden sources or unsupported knowledge, respond EXACTLY with:
 "I’m sorry, I don’t have that information. Is there something else I can help you with."
@@ -152,9 +141,9 @@ function sha256(value) {
   return crypto.createHash("sha256").update(value).digest("hex");
 }
 
-function getActorKey(request, threadId) {
+function getActorKey(request, threadId, workspaceId) {
   const ip = getClientIp(request);
-  return sha256(`${ip}:${threadId}`);
+  return sha256(`${workspaceId}:${ip}:${threadId}`);
 }
 
 async function enforceRateLimit(db, actorKey) {
@@ -163,7 +152,7 @@ async function enforceRateLimit(db, actorKey) {
   const windowStart = new Date(now.getTime() - WINDOW_MS);
   const expiresAt = new Date(now.getTime() + WINDOW_MS);
 
-  const doc = await collection.findOneAndUpdate(
+  const result = await collection.findOneAndUpdate(
     { actorKey },
     [
       {
@@ -204,6 +193,8 @@ async function enforceRateLimit(db, actorKey) {
     }
   );
 
+  const doc = result?.value || result;
+
   const tooManyRequests = doc.requestsInWindow > MAX_REQUESTS_PER_WINDOW;
   const tooFast =
     typeof doc.secondsSinceLastRequest === "number" &&
@@ -222,6 +213,75 @@ async function enforceRateLimit(db, actorKey) {
   }
 
   return { allowed: true };
+}
+
+function getWorkspaceVectorStoreIds(workspace) {
+  if (Array.isArray(workspace.openaiVectorStoreIds)) {
+    return workspace.openaiVectorStoreIds.filter(Boolean);
+  }
+
+  if (workspace.openaiVectorStoreId) {
+    return [workspace.openaiVectorStoreId];
+  }
+
+  return [];
+}
+
+function normalizeInstructionText(value, maxLength = MAX_ADDITIONAL_INSTRUCTIONS_LENGTH) {
+  if (typeof value !== "string") return "";
+  return value.trim().slice(0, maxLength);
+}
+
+function getWorkspaceConfigInstructions(workspace) {
+  const config = workspace?.chatbot?.config || {};
+
+  return {
+    customInitialMessage: normalizeInstructionText(config.initialMessage, 1000),
+    additionalInstructions:
+      normalizeInstructionText(config.additionalInstructions) ||
+      normalizeInstructionText(config.instructions)
+  };
+}
+
+function getWorkspaceInstructions(workspace) {
+  const { customInitialMessage, additionalInstructions } =
+    getWorkspaceConfigInstructions(workspace);
+
+  const instructionSections = [
+    `
+You are a concise customer-facing website assistant.
+
+Rules:
+- Answer using plain helpful language.
+- You may use simple markdown when it improves clarity:
+  - headings with #
+  - bullet lists with -
+  - markdown links like [label](https://example.com)
+  - inline code
+- If the user asks for a link, resume, portfolio, contact page, or resource, prefer returning the exact public URL when available in knowledge.
+- Preserve useful link text and URLs from retrieved content when they directly answer the question.
+- Do not mention internal tools, sources, citations, vector stores, or retrieval.
+- Do not claim actions you cannot perform.
+- Do not say you can send, attach, upload, or deliver files.
+- Keep answers aligned with this chatbot setup when relevant:
+${customInitialMessage ? `- Assistant persona/context: ${customInitialMessage}` : "- Assistant persona/context: helpful professional assistant."}
+- If unsure, say:
+"${SAFE_FALLBACK_REPLY}"
+- If asked to do something unsupported here, say:
+"${UNSUPPORTED_ACTION_REPLY}"
+`.trim()
+  ];
+
+  if (additionalInstructions) {
+    instructionSections.push(
+      `
+Additional workspace-specific instructions:
+${additionalInstructions}
+`.trim()
+    );
+  }
+
+  return instructionSections.join("\n\n");
 }
 
 export default async function chatRoutes(fastify) {
@@ -249,7 +309,13 @@ export default async function chatRoutes(fastify) {
       const db = fastify.mongoDb;
       const openai = fastify.openai;
 
-      const actorKey = getActorKey(request, threadId);
+      const access = await resolveWorkspaceAccess(request, db);
+      if (!access.ok) {
+        return reply.code(access.status).send({ error: access.error });
+      }
+
+      const { workspace } = access;
+      const actorKey = getActorKey(request, threadId, String(workspace._id));
       const limit = await enforceRateLimit(db, actorKey);
 
       if (!limit.allowed) {
@@ -261,32 +327,25 @@ export default async function chatRoutes(fastify) {
 
       const threads = db.collection("chat_threads");
       const messages = db.collection("chat_messages");
-      const existingThread = await threads.findOne({ threadId });
 
-      const vectorStoreIds = getVectorStoreIds();
+      const existingThread = await threads.findOne({
+        threadId,
+        workspaceId: String(workspace._id)
+      });
+
+      const vectorStoreIds = getWorkspaceVectorStoreIds(workspace);
 
       const tools = vectorStoreIds.length
         ? [
             {
               type: "file_search",
               vector_store_ids: vectorStoreIds,
-              max_num_results: 5
+              max_num_results: 8
             }
           ]
         : [];
 
-      const instructions = `
-You are a concise customer-facing website assistant.
-
-Rules:
-- Answer using plain helpful language.
-- Do not mention internal tools, files, sources, citations, vector stores, or retrieval.
-- Do not claim actions you cannot perform.
-- If unsure, say:
-"${SAFE_FALLBACK_REPLY}"
-- If asked to do something unsupported here, say:
-"${UNSUPPORTED_ACTION_REPLY}"
-`.trim();
+      const instructions = getWorkspaceInstructions(workspace);
 
       const response = await openai.responses.create({
         model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
@@ -322,6 +381,7 @@ Rules:
 
       if (!existingThread) {
         await threads.insertOne({
+          workspaceId: String(workspace._id),
           threadId,
           openaiPreviousResponseId: response.id,
           createdAt: now,
@@ -333,7 +393,10 @@ Rules:
         });
       } else {
         await threads.updateOne(
-          { threadId },
+          {
+            threadId,
+            workspaceId: String(workspace._id)
+          },
           {
             $set: {
               openaiPreviousResponseId: response.id,
@@ -348,6 +411,7 @@ Rules:
 
       await messages.insertMany([
         {
+          workspaceId: String(workspace._id),
           threadId,
           role: "user",
           text: message,
@@ -357,6 +421,7 @@ Rules:
           pageTitle: body.pageTitle || null
         },
         {
+          workspaceId: String(workspace._id),
           threadId,
           role: "assistant",
           text: replyText,
@@ -369,6 +434,7 @@ Rules:
 
       return reply.send({
         ok: true,
+        workspaceId: String(workspace._id),
         threadId,
         reply: replyText,
         responseId: response.id

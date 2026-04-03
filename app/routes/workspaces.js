@@ -1,6 +1,11 @@
 import { Router } from 'express';
 import { ensureAuth } from '../middleware/auth.js';
-import { index, newForm, create, show } from '../controllers/workspaceController.js';
+import {
+  index,
+  newForm,
+  create,
+  show
+} from '../controllers/workspaceController.js';
 
 const router = Router();
 

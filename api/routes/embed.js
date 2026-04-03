@@ -1,39 +1,49 @@
+import { resolveWorkspaceAccess } from "../lib/workspace-auth.js";
+
+function buildModulesFromWorkspace(workspace) {
+  const chatModule = workspace.chatbot || {};
+  const allowedDomains = Array.isArray(workspace.allowedDomains)
+    ? workspace.allowedDomains
+    : [];
+
+  return [
+    {
+      ...chatModule,
+      config: {
+        ...(chatModule.config || {}),
+        allowedDomains
+      }
+    },
+    {
+      name: "analytics",
+      enabled: false,
+      scriptUrl: "http://localhost:4001/analytics.js",
+      module: true,
+      config: {},
+    },
+  ];
+}
+
 export default async function embedRoutes(fastify) {
   fastify.get("/config", async function handler(request, reply) {
+
+    const access = await resolveWorkspaceAccess(request, fastify.mongoDb);
+
+    if (!access.ok) {
+      return reply.code(access.status).send({
+        success: false,
+        error: access.error,
+      });
+    }
+
+    const { workspace } = access;
+
     return reply.code(200).send({
       success: true,
-      modules: [
-        {
-          name: "chat",
-          enabled: true,
-          scriptUrl: "http://localhost:4001/public/lib/chat.js",
-          module: false,
-          config: {
-            title: "Dan Bot",
-            subtitle: "How can I help?",
-            initialMessage:
-              "Hi, I'm Dan Bot, a custom chatbot built by Daniel Palmer to assist recruiters and potential employers. Ask me anything related to my professional experience, skills, and projects.",
-            quickMessages: [
-              "How can I contact you?",
-              "Tell me about your recent projects",
-              "What technologies do you specialize in?",
-              "Can I see your resume?",
-              "What is Dan Bot?"
-            ],
-            footerLinks: [
-              { label: "Privacy Policy", href: "/privacy" },
-              { label: "Disclaimer", href: "/disclaimer" }
-            ],
-          },
-        },
-        {
-          name: "analytics",
-          enabled: false,
-          scriptUrl: "http://localhost:4001/analytics.js",
-          module: true,
-          config: {},
-        },
-      ],
+      workspaceId: String(workspace._id),
+      name: workspace.name,
+      allowedDomains: workspace.allowedDomains || [],
+      modules: buildModulesFromWorkspace(workspace),
     });
   });
 }

@@ -19,5 +19,9 @@
 </div>
 
 <script>
-  new SimpleMDE({ element: document.getElementById('markdown-editor') });
+  (() => {
+   window.onload = ()=>{
+     new SimpleMDE({ element: document.getElementById('markdown-editor'),hideIcons:["guide","image"] });
+   }
+  })()
 </script>
