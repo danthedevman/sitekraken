@@ -1,0 +1,10 @@
+<div class="card">
+  <div class="card-body">
+    <h2 class="h4 mb-3">Profile</h2>
+    <p><strong>Name:</strong> <%= currentUser.displayName %></p>
+    <p><strong>Email:</strong> <%= currentUser.email %></p>
+    <% if (currentUser.avatar) { %>
+      <img src="<%= currentUser.avatar %>" alt="avatar" class="rounded" width="72" />
+    <% } %>
+  </div>
+</div>

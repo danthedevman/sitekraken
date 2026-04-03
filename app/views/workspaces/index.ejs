@@ -1,0 +1,18 @@
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">Your workspaces</h1>
+  <a href="/workspaces/new" class="btn btn-primary">New workspace</a>
+</div>
+
+<div class="row g-3">
+  <% workspaces.forEach(workspace => { %>
+    <div class="col-md-6 col-lg-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title"><%= workspace.name %></h5>
+          <p class="card-text text-muted"><%= workspace.description || 'No description' %></p>
+          <a href="/workspaces/<%= workspace._id %>" class="btn btn-outline-primary btn-sm">Open</a>
+        </div>
+      </div>
+    </div>
+  <% }) %>
+</div>

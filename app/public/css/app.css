@@ -1,0 +1,12 @@
+body {
+  background: #f8f9fa;
+}
+
+pre {
+  white-space: pre-wrap;
+}
+
+.CodeMirror,
+.editor-toolbar {
+  border-color: #dee2e6 !important;
+}

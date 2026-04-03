@@ -10,13 +10,15 @@ import ejs from "ejs";
 import mongoPlugin from "./plugins/mongo.js";
 import openaiPlugin from "./plugins/openai.js";
 import chatRoutes from "./routes/chat.js";
+import embedRoutes from "./routes/embed.js";
+import fastifyStatic from "@fastify/static";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = Fastify({
   logger: true,
-  trustProxy: true
+  trustProxy: true,
 });
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
@@ -38,26 +40,29 @@ await app.register(cors, {
 
     cb(new Error("Origin not allowed"), false);
   },
-  credentials: false
+  credentials: false,
 });
 
 await app.register(view, {
   engine: {
-    ejs
+    ejs,
   },
-  root: path.join(__dirname, "views")
+  root: path.join(__dirname, "views"),
 });
 
+await app.register(fastifyStatic, {
+  root: path.join(__dirname, "public"),
+  prefix: "/public/"
+});
 
 await app.register(mongoPlugin);
 await app.register(openaiPlugin);
 
+await app.register(embedRoutes, { prefix: "/embed" });
 await app.register(chatRoutes, { prefix: "/api" });
 
-app.get("/health", async function () {
-  return {
-    ok: true
-  };
+app.get("/health", async function (req, reply) {
+  return reply.status(200).send({ ok: true });
 });
 
 const port = Number(process.env.PORT || 4001);

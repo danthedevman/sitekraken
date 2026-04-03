@@ -1,0 +1,50 @@
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">Files · <%= workspace.name %></h1>
+  <a href="/workspaces/<%= workspace._id %>" class="btn btn-light">Back</a>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <form action="/workspaces/<%= workspace._id %>/files" method="POST" enctype="multipart/form-data">
+      <div class="mb-3">
+        <label class="form-label">Upload file</label>
+        <input type="file" name="file" class="form-control" required />
+      </div>
+      <button class="btn btn-primary">Upload to OpenAI</button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h2 class="h5">Uploaded files</h2>
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Size</th>
+            <th>OpenAI File ID</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% files.forEach(file => { %>
+            <tr>
+              <td><%= file.originalName %></td>
+              <td><%= file.mimeType %></td>
+              <td><%= file.size %></td>
+              <td><code><%= file.openaiFileId %></code></td>
+              <td>
+                <form action="/workspaces/<%= workspace._id %>/files/<%= file._id %>?_method=DELETE" method="POST">
+                  <button class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
