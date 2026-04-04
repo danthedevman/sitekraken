@@ -7,43 +7,75 @@
   <div class="col-lg-8">
     <div class="card">
       <div class="card-body">
-        <form method="POST" action="/workspaces/<%= workspace._id %>/chatbot">
+        <form
+          method="POST"
+          action="/workspaces/<%= workspace._id %>/chatbot"
+          enctype="multipart/form-data"
+        >
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label">Name</label>
-              <input name="name" class="form-control" value="<%= chatbot.name %>" />
+              <input
+                name="name"
+                class="form-control"
+                value="<%= chatbot.name %>"
+              />
             </div>
+
             <div class="col-md-6">
               <label class="form-label">Script URL</label>
-              <input name="scriptUrl" class="form-control" value="<%= chatbot.scriptUrl %>" />
+              <input
+                name="scriptUrl"
+                class="form-control"
+                value="<%= chatbot.scriptUrl %>"
+              />
             </div>
 
             <div class="col-md-6">
               <div class="form-check mt-4">
-                <input class="form-check-input" type="checkbox" name="enabled" <%= chatbot.enabled ? 'checked' : '' %> />
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  name="enabled"
+                  <%= chatbot.enabled ? 'checked' : '' %>
+                />
                 <label class="form-check-label">Enabled</label>
               </div>
             </div>
 
             <div class="col-md-6">
               <div class="form-check mt-4">
-                <input class="form-check-input" type="checkbox" name="module" <%= chatbot.module ? 'checked' : '' %> />
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  name="module"
+                  <%= chatbot.module ? 'checked' : '' %>
+                />
                 <label class="form-check-label">Module</label>
               </div>
             </div>
 
             <div class="col-md-6">
               <label class="form-label">Title</label>
-              <input name="title" class="form-control" value="<%= chatbot.config.title %>" />
+              <input
+                name="title"
+                class="form-control"
+                value="<%= config.title || '' %>"
+              />
             </div>
+
             <div class="col-md-6">
               <label class="form-label">Subtitle</label>
-              <input name="subtitle" class="form-control" value="<%= chatbot.config.subtitle %>" />
+              <input
+                name="subtitle"
+                class="form-control"
+                value="<%= config.subtitle || '' %>"
+              />
             </div>
 
             <div class="col-12">
               <label class="form-label">Initial Message</label>
-              <textarea name="initialMessage" class="form-control" rows="4"><%= chatbot.config.initialMessage %></textarea>
+              <textarea name="initialMessage" class="form-control" rows="4"><%= config.initialMessage || '' %></textarea>
             </div>
 
             <div class="col-12">
@@ -53,26 +85,198 @@
                 class="form-control"
                 rows="6"
                 placeholder="Example:&#10;- Keep answers brief&#10;- If asked about pricing, send users to /pricing&#10;- Use a friendly and professional tone"
-              ><%= chatbot.config.additionalInstructions || '' %></textarea>
+              ><%= config.additionalInstructions || '' %></textarea>
               <div class="form-text">
                 Extra assistant behavior instructions for this workspace. These are not shown to end users.
               </div>
             </div>
 
-            <div class="col-md-6">
-              <label class="form-label">Quick Messages (one per line)</label>
-              <textarea name="quickMessages" class="form-control" rows="8"><%= chatbot.config.quickMessages.join('\n') %></textarea>
+            <div class="col-12">
+              <hr />
+              <h2 class="h5 mb-3">Branding</h2>
             </div>
 
             <div class="col-md-6">
-              <label class="form-label">Footer Links (Label|Href per line)</label>
-              <textarea name="footerLinks" class="form-control" rows="8"><%= chatbot.config.footerLinks.map(link => `${link.label}|${link.href}`).join('\n') %></textarea>
+              <label class="form-label">Logo upload</label>
+              <input
+                type="file"
+                name="logo"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                class="form-control"
+              />
+              <input
+                type="hidden"
+                name="existingLogoUrl"
+                value="<%= config.logoUrl || '' %>"
+              />
+              <div class="form-text">
+                Upload a logo to Cloudflare R2.
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label d-block">Current logo</label>
+              <% if (config.logoUrl) { %>
+                <div class="border rounded p-2 bg-light mb-2 text-center">
+                  <img
+                    src="<%= config.logoUrl %>"
+                    alt="Current logo"
+                    style="max-width: 100%; max-height: 80px; object-fit: contain;"
+                  />
+                </div>
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    name="removeLogo"
+                    id="removeLogo"
+                  />
+                  <label class="form-check-label" for="removeLogo">
+                    Remove current logo
+                  </label>
+                </div>
+              <% } else { %>
+                <div class="text-muted small mt-2">No logo uploaded yet.</div>
+              <% } %>
+            </div>
+
+            <div class="col-12">
+              <hr />
+              <h2 class="h5 mb-3">Colors</h2>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Accent</label>
+              <input type="color" name="accent" class="form-control form-control-color" value="<%= config.accent || '#111827' %>" />
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Accent Text</label>
+              <input type="color" name="accentText" class="form-control form-control-color" value="<%= config.accentText || '#ffffff' %>" />
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Border</label>
+              <input type="color" name="border" class="form-control form-control-color" value="<%= config.border || '#e5e7eb' %>" />
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Panel Background</label>
+              <input type="color" name="panelBg" class="form-control form-control-color" value="<%= config.panelBg || '#ffffff' %>" />
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Muted Text</label>
+              <input type="color" name="muted" class="form-control form-control-color" value="<%= config.muted || '#6b7280' %>" />
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Bot Bubble Background</label>
+              <input type="color" name="bubbleBotBg" class="form-control form-control-color" value="<%= config.bubbleBotBg || '#ffffff' %>" />
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Bot Bubble Text</label>
+              <input type="color" name="bubbleBotText" class="form-control form-control-color" value="<%= config.bubbleBotText || '#111827' %>" />
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">User Bubble Background</label>
+              <input type="color" name="bubbleUserBg" class="form-control form-control-color" value="<%= config.bubbleUserBg || '#111827' %>" />
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">User Bubble Text</label>
+              <input type="color" name="bubbleUserText" class="form-control form-control-color" value="<%= config.bubbleUserText || '#ffffff' %>" />
+            </div>
+
+            <div class="col-12">
+              <hr />
+              <h2 class="h5 mb-3">Layout</h2>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Launcher Size</label>
+              <input
+                name="launcherSize"
+                type="number"
+                class="form-control"
+                value="<%= config.launcherSize || 70 %>"
+              />
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Bottom Offset</label>
+              <input
+                name="bottom"
+                type="number"
+                class="form-control"
+                value="<%= config.bottom || 20 %>"
+              />
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Right Offset</label>
+              <input
+                name="right"
+                type="number"
+                class="form-control"
+                value="<%= config.right || 20 %>"
+              />
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Max Width</label>
+              <input
+                name="maxWidth"
+                type="number"
+                class="form-control"
+                value="<%= config.maxWidth || 420 %>"
+              />
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Panel Width</label>
+              <input
+                name="panelWidth"
+                class="form-control"
+                value="<%= config.panelWidth || 'min(420px, calc(100vw - 20px))' %>"
+              />
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Panel Height</label>
+              <input
+                name="panelHeight"
+                class="form-control"
+                value="<%= config.panelHeight || 'min(600px, calc(100vh - 110px))' %>"
+              />
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Quick Messages (one per line)</label>
+              <textarea name="quickMessages" class="form-control" rows="8"><%= quickMessagesText %></textarea>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Footer Links (Label|Href|Target per line)</label>
+              <textarea name="footerLinks" class="form-control" rows="8"><%= footerLinksText %></textarea>
+              <div class="form-text">
+                Example: Docs|https://example.com/docs|_blank
+              </div>
             </div>
 
             <div class="col-12">
               <label class="form-label">Allowed Domains (one per line)</label>
-              <textarea name="allowedDomains" class="form-control" rows="5" placeholder="example.com&#10;jobs.example.com"><%= (workspace.allowedDomains || []).join('\n') %></textarea>
-              <div class="form-text">Store bare hostnames only. Example: <code>example.com</code></div>
+              <textarea
+                name="allowedDomains"
+                class="form-control"
+                rows="5"
+                placeholder="example.com&#10;jobs.example.com"
+              ><%= allowedDomainsText %></textarea>
+              <div class="form-text">
+                Store bare hostnames only. Example: <code>example.com</code>
+              </div>
             </div>
           </div>
 
@@ -87,10 +291,18 @@
       <div class="card-body">
         <h2 class="h5">Embed API key</h2>
         <p class="small text-muted mb-2">This key is generated per workspace.</p>
-        <div class="bg-light border rounded p-2 small"><code><%= workspace.apiKey %></code></div>
+        <div class="bg-light border rounded p-2 small">
+          <code><%= workspace.apiKey %></code>
+        </div>
 
-        <form class="mt-3" method="POST" action="/workspaces/<%= workspace._id %>/chatbot/regenerate-key">
-          <button class="btn btn-outline-warning btn-sm">Regenerate API key</button>
+        <form
+          class="mt-3"
+          method="POST"
+          action="/workspaces/<%= workspace._id %>/chatbot/regenerate-key"
+        >
+          <button class="btn btn-outline-warning btn-sm">
+            Regenerate API key
+          </button>
         </form>
       </div>
     </div>
@@ -100,7 +312,13 @@
         <h2 class="h5">Script tag</h2>
         <p class="small text-muted">Copy and paste this into the target site.</p>
         <textarea id="embed-script" class="form-control small" rows="5" readonly><%= embedScriptTag %></textarea>
-        <button type="button" class="btn btn-success btn-sm mt-2" onclick="navigator.clipboard.writeText(document.getElementById('embed-script').value)">Copy script tag</button>
+        <button
+          type="button"
+          class="btn btn-success btn-sm mt-2"
+          onclick="navigator.clipboard.writeText(document.getElementById('embed-script').value)"
+        >
+          Copy script tag
+        </button>
       </div>
     </div>
 
@@ -112,9 +330,9 @@
   enabled: chatbot.enabled,
   scriptUrl: chatbot.scriptUrl,
   module: chatbot.module,
-  allowedDomains: chatbot.allowedDomains || [],
-  apiKey: chatbot.apiKey,
-  config: chatbot.config
+  allowedDomains: workspace.allowedDomains || [],
+  apiKey: workspace.apiKey,
+  config: config
 }, null, 2) %></code></pre>
       </div>
     </div>

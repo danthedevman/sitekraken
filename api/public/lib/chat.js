@@ -1,4 +1,5 @@
 (() => {
+
   if (window.__embeddedChatbotLoaded) return;
   window.__embeddedChatbotLoaded = true;
 
@@ -23,19 +24,18 @@
     moduleConfig = {};
   }
 
+  const inferredScriptOrigin = currentScript?.src
+    ? (() => {
+        try {
+          return new URL(currentScript.src, window.location.href).origin;
+        } catch {
+          return "";
+        }
+      })()
+    : "";
+
   const DEFAULTS = {
-    apiUrl:
-      (currentScript &&
-        currentScript.src &&
-        (() => {
-          try {
-            const u = new URL(currentScript.src, window.location.href);
-            return u.origin;
-          } catch {
-            return "http://localhost:4001";
-          }
-        })()) ||
-      "http://localhost:4001",
+    apiUrl: "",
     apiKey:
       currentScript?.getAttribute("data-api-key") ||
       window.EmbeddedChatbotConfig?.apiKey ||
@@ -63,6 +63,7 @@
     footerLinks: [],
     siteName: window.location.hostname,
     allowedDomains: [],
+    logoUrl: "",
   };
 
   const config = {
@@ -72,12 +73,17 @@
     apiUrl:
       moduleConfig.apiUrl ||
       window.EmbeddedChatbotConfig?.apiUrl ||
-      DEFAULTS.apiUrl,
+      inferredScriptOrigin ||
+      window.location.origin,
     apiKey:
       currentScript?.getAttribute("data-api-key") ||
       moduleConfig.apiKey ||
       window.EmbeddedChatbotConfig?.apiKey ||
       DEFAULTS.apiKey,
+    logoUrl:
+      moduleConfig.logoUrl ||
+      window.EmbeddedChatbotConfig?.logoUrl ||
+      DEFAULTS.logoUrl,
   };
 
   function createId(prefix) {
@@ -123,8 +129,118 @@
       .filter(Boolean);
   }
 
+  function escapeHtml(value) {
+    return String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function sanitizeCssColor(value, fallback) {
+    const str = String(value || "").trim();
+    if (!str) return fallback;
+
+    if (
+      /^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(str) ||
+      /^rgba?\([\d\s.,%]+\)$/i.test(str) ||
+      /^hsla?\([\d\s.,%]+\)$/i.test(str) ||
+      /^[a-z]+$/i.test(str)
+    ) {
+      return str;
+    }
+
+    return fallback;
+  }
+
+  function sanitizeDimension(value, fallback, options = {}) {
+    const str = String(value ?? "").trim();
+    if (!str) return fallback;
+
+    const allowCalc = options.allowCalc !== false;
+
+    if (/^\d+(\.\d+)?(px|rem|em|vw|vh|dvw|dvh|%)$/i.test(str)) {
+      return str;
+    }
+
+    if (allowCalc && /^min\(.+\)$/i.test(str)) {
+      return str;
+    }
+
+    if (allowCalc && /^max\(.+\)$/i.test(str)) {
+      return str;
+    }
+
+    if (allowCalc && /^calc\(.+\)$/i.test(str)) {
+      return str;
+    }
+
+    return fallback;
+  }
+
+  function normalizePositiveNumber(value, fallback) {
+    const n = Number(value);
+    return Number.isFinite(n) && n > 0 ? n : fallback;
+  }
+
+  function sanitizeUrl(value) {
+    const str = String(value || "").trim();
+    if (!str) return "";
+
+    try {
+      const url = new URL(str, window.location.href);
+      if (url.protocol === "http:" || url.protocol === "https:") {
+        return url.toString();
+      }
+      return "";
+    } catch {
+      return "";
+    }
+  }
+
   config.quickMessages = normalizeQuickMessages(config.quickMessages);
   config.footerLinks = normalizeFooterLinks(config.footerLinks);
+  config.title = String(config.title || DEFAULTS.title);
+  config.subtitle = String(config.subtitle || DEFAULTS.subtitle);
+  config.initialMessage = String(
+    config.initialMessage || DEFAULTS.initialMessage,
+  );
+  config.siteName = String(config.siteName || window.location.hostname);
+  config.accent = sanitizeCssColor(config.accent, DEFAULTS.accent);
+  config.accentText = sanitizeCssColor(config.accentText, DEFAULTS.accentText);
+  config.border = sanitizeCssColor(config.border, DEFAULTS.border);
+  config.panelBg = sanitizeCssColor(config.panelBg, DEFAULTS.panelBg);
+  config.muted = sanitizeCssColor(config.muted, DEFAULTS.muted);
+  config.bubbleUserBg = sanitizeCssColor(
+    config.bubbleUserBg,
+    DEFAULTS.bubbleUserBg,
+  );
+  config.bubbleUserText = sanitizeCssColor(
+    config.bubbleUserText,
+    DEFAULTS.bubbleUserText,
+  );
+  config.bubbleBotBg = sanitizeCssColor(
+    config.bubbleBotBg,
+    DEFAULTS.bubbleBotBg,
+  );
+  config.bubbleBotText = sanitizeCssColor(
+    config.bubbleBotText,
+    DEFAULTS.bubbleBotText,
+  );
+  config.launcherSize = normalizePositiveNumber(
+    config.launcherSize,
+    DEFAULTS.launcherSize,
+  );
+  config.bottom = normalizePositiveNumber(config.bottom, DEFAULTS.bottom);
+  config.right = normalizePositiveNumber(config.right, DEFAULTS.right);
+  config.maxWidth = normalizePositiveNumber(config.maxWidth, DEFAULTS.maxWidth);
+  config.panelWidth = sanitizeDimension(config.panelWidth, DEFAULTS.panelWidth);
+  config.panelHeight = sanitizeDimension(
+    config.panelHeight,
+    DEFAULTS.panelHeight,
+  );
+  config.logoUrl = sanitizeUrl(config.logoUrl);
 
   function loadState() {
     const raw = localStorage.getItem(config.storageKey);
@@ -170,15 +286,6 @@
         messages: state.messages,
       }),
     );
-  }
-
-  function escapeHtml(value) {
-    return String(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
   }
 
   function sanitizeHtml(html) {
@@ -426,6 +533,32 @@
     );
   }
 
+  function renderAvatarMarkup() {
+    if (config.logoUrl) {
+      return `<img class="custom-launcher-image" src="${escapeHtml(config.logoUrl)}" alt="${escapeHtml(config.title)} logo">`;
+    }
+
+    return `<span class="avatarFallback" aria-hidden="true">${escapeHtml(
+      (config.title || "AI").trim().slice(0, 2).toUpperCase(),
+    )}</span>`;
+  }
+
+  function renderLauncherMarkup() {
+    if (config.logoUrl) {
+      return `<img
+        class="icon-chat custom-launcher-image"
+        src="${escapeHtml(config.logoUrl)}"
+        alt="Open chat"
+      />`;
+    }
+
+    return `
+      <svg class="icon-chat" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M8 10h8M8 14h5m6 6-3.6-1.8a3 3 0 0 0-1.34-.32H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v6a4 4 0 0 1-2 3.46Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    `;
+  }
+
   function mount() {
     if (document.getElementById("embedded-chatbot-host")) return;
 
@@ -463,6 +596,7 @@
         border: none;
         border-radius: 9999px;
         color: ${config.accentText};
+        background: ${config.accent};
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -481,9 +615,12 @@
       .launcher .icon-close { opacity: 0; transform: scale(0.8); }
       .launcher.open .icon-chat { opacity: 0; transform: scale(0.8); }
       .launcher.open .icon-close { opacity: 1; transform: scale(1); }
-      .launcher.open { background: ${config.accent}; }
       .custom-launcher-image {
-        width: 100%; height: 100%; object-fit: cover; border-radius: 9999px;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 9999px;
+        display: block;
       }
 
       .panel {
@@ -527,10 +664,27 @@
       }
       .headerInfo { min-width: 0; display: flex; align-items: center; gap: 10px; }
       .avatar {
-        width: 34px; height: 34px; border-radius: 9999px;
+        width: 34px;
+        height: 34px;
+        border-radius: 9999px;
         color: ${config.accentText};
-        display: inline-flex; align-items: center; justify-content: center;
-        font-size: 13px; font-weight: 700; flex-shrink: 0; overflow: hidden;
+        background: ${config.accent};
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 700;
+        flex-shrink: 0;
+        overflow: hidden;
+      }
+      .avatarFallback {
+        width: 100%;
+        height: 100%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 700;
       }
       .titleWrap { min-width: 0; }
       .title { margin: 0; font-size: 15px; font-weight: 700; color: #111827; line-height: 1.2; }
@@ -620,7 +774,7 @@
         border-top-left-radius: 8px;
       }
       .messageGroup.user .bubble {
-        background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+        background: ${config.bubbleUserBg};
         color: ${config.bubbleUserText};
         border: 1px solid rgba(255,255,255,0.08);
         border-top-right-radius: 8px;
@@ -777,7 +931,7 @@
         <div class="header">
           <div class="headerInfo">
             <div class="avatar">
-              <img class="icon-chat custom-launcher-image" src="/logo.svg" alt="Logo">
+              ${renderAvatarMarkup()}
             </div>
             <div class="titleWrap">
               <div class="title">${escapeHtml(config.title)}</div>
@@ -840,11 +994,7 @@
       </section>
 
       <button class="launcher" aria-label="Toggle chatbot" title="Toggle chatbot">
-        <img
-          class="icon-chat custom-launcher-image"
-          src="/logo.svg"
-          alt="Open chat"
-        />
+        ${renderLauncherMarkup()}
 
         <svg class="icon-close" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
@@ -1262,6 +1412,11 @@
   async function init() {
     if (!config.apiKey) {
       console.warn("Chatbot API key missing. Skipping mount.");
+      return;
+    }
+
+    if (!config.apiUrl) {
+      console.warn("Chatbot API URL missing. Skipping mount.");
       return;
     }
 

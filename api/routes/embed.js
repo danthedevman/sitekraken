@@ -2,6 +2,7 @@ import { resolveWorkspaceAccess } from "../lib/workspace-auth.js";
 
 function buildModulesFromWorkspace(workspace) {
   const chatModule = workspace.chatbot || {};
+  chatModule.enabled = true;
   const allowedDomains = Array.isArray(workspace.allowedDomains)
     ? workspace.allowedDomains
     : [];

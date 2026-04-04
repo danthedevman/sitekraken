@@ -1,4 +1,5 @@
 (function (w, d) {
+
   if (w.__skEmbedLoaderLoaded) return;
   w.__skEmbedLoaderLoaded = true;
 
@@ -24,8 +25,7 @@
         } catch (e) {
           return null;
         }
-      })()) ||
-    "http://localhost:4001";
+      })());
 
   if (!apiKey) {
     console.error("[SiteKraken] Missing data-api-key on embed script.");
@@ -121,7 +121,7 @@
       credentials: "omit",
     }).then(async function (res) {
       var text = await res.text();
-
+ 
       if (!res.ok) {
         throw new Error("Failed to fetch embed config (" + res.status + ")");
       }

@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import multer from 'multer';
+
 import { ensureAuth } from '../middleware/auth.js';
 import {
   index,
@@ -8,8 +10,15 @@ import {
 
 const router = Router({ mergeParams: true });
 
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024
+  }
+});
+
 router.get('/', ensureAuth, index);
-router.post('/', ensureAuth, update);
+router.post('/', ensureAuth, upload.single('logo'), update);
 router.post('/regenerate-key', ensureAuth, regenerateApiKey);
 
 export default router;
