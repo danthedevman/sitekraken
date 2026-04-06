@@ -40,7 +40,7 @@ export function defaultChatbotConfig(workspaceId = null, overrides = {}) {
     enabled:
       typeof overrides.enabled === "boolean" ? overrides.enabled : true,
     scriptUrl:
-      overrides.scriptUrl || "http://localhost:4001/public/lib/chat.js",
+      overrides.scriptUrl || "https://api.sitekraken.com/public/lib/chat.js",
     module: typeof overrides.module === "boolean" ? overrides.module : false,
     allowedDomains: Array.isArray(overrides.allowedDomains)
       ? overrides.allowedDomains

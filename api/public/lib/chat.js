@@ -596,7 +596,7 @@
         border: none;
         border-radius: 9999px;
         color: ${config.accentText};
-        background: ${config.accent};
+        background: ${config.logoUrl ? 'none' :config.accent};
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -604,6 +604,10 @@
         overflow: hidden;
         box-shadow: 0 18px 40px rgba(0,0,0,0.18), 0 8px 18px rgba(0,0,0,0.12);
         transition: transform 140ms ease, opacity 140ms ease;
+      }
+        
+      .launcher.open{
+       background: ${config.accent};
       }
       .launcher:hover { transform: translateY(-1px); }
       .launcher svg { width: 26px; height: 26px; display: block; }
@@ -668,7 +672,7 @@
         height: 34px;
         border-radius: 9999px;
         color: ${config.accentText};
-        background: ${config.accent};
+        background: ${config.logoUrl ? 'none' :config.accent};
         display: inline-flex;
         align-items: center;
         justify-content: center;

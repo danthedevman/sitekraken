@@ -69,8 +69,8 @@ function stringValue(value, fallback = '') {
 function buildEmbedScriptTag(workspace) {
   const appUrl = String(process.env.APP_URL || '').replace(/\/+$/, '');
   const src = appUrl
-    ? `${appUrl}/public/loader.js`
-    : '/public/loader.js';
+    ? `${appUrl}/public/lib/embed.js`
+    : '/public/lib/embed.js';
 
   return `<script src="${src}" data-api-key="${workspace.apiKey}"></script>`;
 }
@@ -203,7 +203,7 @@ export async function update(req, res) {
   });
 
   const currentConfig = ensureWorkspaceChatbotDefaults(workspace)?.chatbot?.config || {};
-  const quickMessages = parseLines(req.body.quickMessaages);
+  const quickMessages = parseLines(req.body.quickMessages);
   const footerLinks = parseFooterLinks(req.body.footerLinks);
   const allowedDomains = normalizeAllowedDomainsInput(req.body.allowedDomains);
 

@@ -14,6 +14,8 @@ const SAFE_FALLBACK_REPLY =
 const UNSUPPORTED_ACTION_REPLY =
   "I’m sorry, I can’t do that here. Is there something else I can help you with?";
 
+const END_CONVERSATION_REPLY = "Glad I could help.";
+
 const ALLOWED_NON_KNOWLEDGE_REPLIES = new Map([
   ["hi", "Hi! How can I help you today?"],
   ["hello", "Hello! How can I help you today?"],
@@ -24,6 +26,27 @@ const ALLOWED_NON_KNOWLEDGE_REPLIES = new Map([
   ["thanks", "You’re welcome!"],
   ["thank you", "You’re welcome!"]
 ]);
+
+const CONVERSATION_END_PATTERNS = [
+  /\bno thanks?\b/i,
+  /\bno thank you\b/i,
+  /\bnever mind\b/i,
+  /\bnevermind\b/i,
+  /\bi don'?t need (any )?(more )?(help|assistance)( anymore)?\b/i,
+  /\bi do not need (any )?(more )?(help|assistance)( anymore)?\b/i,
+  /\bno (more|further) (help|assistance)\b/i,
+  /\bthat('?s| is) all\b/i,
+  /\bthat('?s| is) it\b/i,
+  /\bi('?m| am) (good|all set|done|fine)\b/i,
+  /\ball set\b/i,
+  /\bwe('?re| are) good\b/i,
+  /\bsolved\b/i,
+  /\bresolved\b/i,
+  /\bgot it(,? thanks)?\b/i,
+  /\bthank(s| you),? (that('?s| is) )?(all|it)\b/i,
+  /\byou can stop\b/i,
+  /\bno reply needed\b/i
+];
 
 function safeThreadId(threadId) {
   if (!threadId || typeof threadId !== "string") {
@@ -110,6 +133,12 @@ function getAllowedNonKnowledgeReply(message) {
   return ALLOWED_NON_KNOWLEDGE_REPLIES.get(normalized) || null;
 }
 
+function userIsEndingConversation(message) {
+  const text = String(message || "").trim();
+  if (!text) return false;
+  return CONVERSATION_END_PATTERNS.some((pattern) => pattern.test(text));
+}
+
 async function rewriteForCustomerSafeOutput(openai, question, answer) {
   if (!answer) return answer;
 
@@ -130,6 +159,7 @@ Rules:
 - Do NOT invent links.
 - Preserve the original meaning exactly when possible.
 - Keep the answer concise and natural.
+- If the user is clearly ending the conversation, rewrite the response as a brief polite closing and do not ask a follow-up question.
 - If the answer cannot be safely rewritten without implying hidden sources or unsupported knowledge, respond EXACTLY with:
 "I’m sorry, I don’t have that information. Is there something else I can help you with."
 - If the draft answer depends on an unsupported action or offer, respond EXACTLY with:
@@ -295,6 +325,7 @@ You must obey these rules:
 - For substantive factual answers, the answer must be supported by retrieved file search results.
 - Do not use general world knowledge, background knowledge, or guesses.
 - Do not infer facts that are not clearly supported by retrieved content.
+- If the user is clearly ending the conversation (for example: "no thanks", "I'm all set", "never mind", "I don't need help anymore"), respond briefly and politely, and do not ask a follow-up question.
 - If retrieved content is missing, irrelevant, or insufficient for a substantive answer, you must reply exactly:
 "${SAFE_FALLBACK_REPLY}"
 
@@ -363,6 +394,10 @@ export default async function chatRoutes(fastify) {
       }
 
       const { workspace } = access;
+      if (!workspace || !workspace.chatbot || !workspace.chatbot.enabled) {
+        return reply.code(403).send({ error: "Chatbot is not enabled." });
+      }
+
       const actorKey = getActorKey(request, threadId, String(workspace._id));
       const limit = await enforceRateLimit(db, actorKey);
 
@@ -380,6 +415,73 @@ export default async function chatRoutes(fastify) {
         threadId,
         workspaceId: String(workspace._id)
       });
+
+      const now = new Date();
+      const isEndingConversation = userIsEndingConversation(message);
+
+      if (isEndingConversation) {
+        const replyText = END_CONVERSATION_REPLY;
+
+        if (!existingThread) {
+          await threads.insertOne({
+            workspaceId: String(workspace._id),
+            threadId,
+            openaiPreviousResponseId: existingThread?.openaiPreviousResponseId || null,
+            createdAt: now,
+            updatedAt: now,
+            source: body.source || "website",
+            pageUrl: body.pageUrl || null,
+            pageTitle: body.pageTitle || null,
+            siteName: body.siteName || null
+          });
+        } else {
+          await threads.updateOne(
+            {
+              threadId,
+              workspaceId: String(workspace._id)
+            },
+            {
+              $set: {
+                updatedAt: now,
+                pageUrl: body.pageUrl || existingThread.pageUrl || null,
+                pageTitle: body.pageTitle || existingThread.pageTitle || null,
+                siteName: body.siteName || existingThread.siteName || null
+              }
+            }
+          );
+        }
+
+        await messages.insertMany([
+          {
+            workspaceId: String(workspace._id),
+            threadId,
+            role: "user",
+            text: message,
+            createdAt: now,
+            source: body.source || "website",
+            pageUrl: body.pageUrl || null,
+            pageTitle: body.pageTitle || null
+          },
+          {
+            workspaceId: String(workspace._id),
+            threadId,
+            role: "assistant",
+            text: replyText,
+            createdAt: now,
+            openaiResponseId: null,
+            rawOutput: [],
+            rewrittenFrom: null
+          }
+        ]);
+
+        return reply.send({
+          ok: true,
+          workspaceId: String(workspace._id),
+          threadId,
+          reply: replyText,
+          responseId: null
+        });
+      }
 
       const vectorStoreIds = getWorkspaceVectorStoreIds(workspace);
 
@@ -434,8 +536,6 @@ export default async function chatRoutes(fastify) {
           replyText = UNSUPPORTED_ACTION_REPLY;
         }
       }
-
-      const now = new Date();
 
       if (!existingThread) {
         await threads.insertOne({

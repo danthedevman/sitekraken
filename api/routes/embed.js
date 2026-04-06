@@ -13,14 +13,14 @@ function buildModulesFromWorkspace(workspace) {
         ...(chatModule.config || {}),
         allowedDomains
       }
-    },
-    {
+    }
+    /*{
       name: "analytics",
       enabled: false,
       scriptUrl: "http://localhost:4001/analytics.js",
       module: true,
       config: {},
-    },
+    },*/
   ];
 }
 
