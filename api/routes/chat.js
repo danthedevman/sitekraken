@@ -15,12 +15,12 @@ const UNSUPPORTED_ACTION_REPLY =
   "I’m sorry, I can’t do that here. Is there something else I can help you with?";
 
 const ALLOWED_NON_KNOWLEDGE_REPLIES = new Map([
-  ["hi", "Hi! I can help answer questions based on the information available here."],
-  ["hello", "Hello! I can help answer questions based on the information available here."],
-  ["hey", "Hey! I can help answer questions based on the information available here."],
-  ["help", "I can help answer questions based on the information available here."],
-  ["what can you help with?", "I can help answer questions based on the information available here."],
-  ["what do you do?", "I can answer questions based on the information available here."],
+  ["hi", "Hi! How can I help you today?"],
+  ["hello", "Hello! How can I help you today?"],
+  ["hey", "Hey! How can I help you today?"],
+  ["help", "How can I help you today?"],
+  ["what can you help with?", "I can assist you with answers based on content I have access to. How can I help you?"],
+  ["what do you do?", "I can answer questions based on the information available."],
   ["thanks", "You’re welcome!"],
   ["thank you", "You’re welcome!"]
 ]);
