@@ -249,7 +249,7 @@
     if (parsed && parsed.threadId && Array.isArray(parsed.messages)) {
       return {
         threadId: parsed.threadId,
-        isOpen: Boolean(parsed.isOpen),
+        isOpen: false,//Boolean(parsed.isOpen),
         isLoading: false,
         isFullscreen: false,
         messages: parsed.messages,
