@@ -1184,7 +1184,7 @@
 
       if (open) {
         setTimeout(function () {
-          textarea.focus();
+          //textarea.focus();
           scrollMessagesToBottom(true);
         }, 0);
       }
