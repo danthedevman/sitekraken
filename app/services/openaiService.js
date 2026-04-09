@@ -36,15 +36,28 @@ export async function uploadBuffer(buffer, filename, mimeType = 'application/oct
 }
 
 export async function addFileToVectorStore(vectorStoreId, openaiFileId) {
-  if (client.vectorStores.files.createAndPoll) {
-    return client.vectorStores.files.createAndPoll(vectorStoreId, {
-      file_id: openaiFileId
-    });
+  if (!vectorStoreId) {
+    throw new Error('Missing workspace vector store ID');
   }
 
-  return client.vectorStores.files.create(vectorStoreId, {
-    file_id: openaiFileId
-  });
+  const vectorStoreFile = client.vectorStores.files.createAndPoll
+    ? await client.vectorStores.files.createAndPoll(vectorStoreId, {
+        file_id: openaiFileId
+      })
+    : await client.vectorStores.files.create(vectorStoreId, {
+        file_id: openaiFileId
+      });
+
+  if (!vectorStoreFile?.id) {
+    throw new Error('Vector store did not return a file ID');
+  }
+
+  if (vectorStoreFile.status && vectorStoreFile.status !== 'completed') {
+    const errMessage = vectorStoreFile.last_error?.message || `Vector store indexing status: ${vectorStoreFile.status}`;
+    throw new Error(errMessage);
+  }
+
+  return vectorStoreFile;
 }
 
 export async function removeFileFromVectorStore(vectorStoreId, vectorStoreFileId) {

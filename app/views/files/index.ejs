@@ -125,7 +125,8 @@
       xhr.addEventListener('load', () => {
         if (xhr.status >= 200 && xhr.status < 300) {
           setUploadProgress(100, 'Upload complete');
-          window.location.reload();
+          const redirectUrl = xhr.response?.redirectUrl || uploadUrl;
+          window.location.assign(`${redirectUrl}?uploaded=${Date.now()}`);
           return;
         }
 

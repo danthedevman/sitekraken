@@ -127,15 +127,18 @@ export async function create(req, res) {
     return res.redirect(`/workspaces/${req.params.workspaceId}/chatbot/files`);
   }
 
+  let r2Asset = null;
+  let uploaded = null;
+
   try {
-    const r2Asset = await uploadFileToR2({
+    r2Asset = await uploadFileToR2({
       fileBuffer: req.file.buffer,
       mimeType: req.file.mimetype,
       workspaceId: workspace._id,
       originalName: req.file.originalname
     });
 
-    const uploaded = await uploadBuffer(
+    uploaded = await uploadBuffer(
       req.file.buffer,
       req.file.originalname,
       req.file.mimetype
@@ -160,13 +163,34 @@ export async function create(req, res) {
     });
 
     if (wantsJson(req)) {
-      return res.status(201).json({ ok: true });
+      return res.status(201).json({
+        ok: true,
+        redirectUrl: `/workspaces/${workspace._id}/chatbot/files`,
+        fileId: uploaded.id,
+        vectorStoreFileId: vectorStoreFile.id
+      });
     }
 
     req.flash('success', 'File uploaded to OpenAI, vector store, and R2');
     return res.redirect(`/workspaces/${workspace._id}/chatbot/files`);
   } catch (error) {
     console.error('File upload failed:', error.message);
+
+    if (uploaded?.id) {
+      try {
+        await deleteOpenAIFile(uploaded.id);
+      } catch (cleanupError) {
+        console.warn('OpenAI cleanup failed:', cleanupError.message);
+      }
+    }
+
+    if (r2Asset?.key) {
+      try {
+        await deleteFromR2(r2Asset.key);
+      } catch (cleanupError) {
+        console.warn('R2 cleanup failed:', cleanupError.message);
+      }
+    }
 
     if (wantsJson(req)) {
       return res.status(500).json({ error: `Upload failed: ${error.message}` });
