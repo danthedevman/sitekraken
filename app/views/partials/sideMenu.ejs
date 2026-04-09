@@ -1,5 +1,39 @@
 <aside class="app-sidebar d-none d-md-flex flex-column">
   <div class="app-sidebar-inner">
+    <div class="px-2 pt-3">
+      <div class="dropdown">
+        <button
+          class="btn app-workspace-dropdown-toggle dropdown-toggle w-100 text-start"
+          type="button"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+          title="<%= workspace.name %>">
+          <span class="d-block text-truncate"><%= workspace.name %></span>
+        </button>
+        <ul class="dropdown-menu w-100 shadow-sm">
+          <% const recent = Array.isArray(recentWorkspaces) ? recentWorkspaces.slice(0, 5) : []; %>
+          <% if (recent.length > 0) { %>
+            <% recent.forEach((item) => { %>
+              <li>
+                <a
+                  class="dropdown-item <%= String(item.id) === String(workspace._id) ? 'active' : '' %>"
+                  href="/workspaces/<%= item.id %>"
+                  title="<%= item.name %>">
+                  <span class="d-block text-truncate"><%= item.name %></span>
+                </a>
+              </li>
+            <% }) %>
+          <% } else { %>
+            <li><span class="dropdown-item-text text-muted">No recent workspaces</span></li>
+          <% } %>
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <a class="dropdown-item fw-semibold" href="/workspaces">View all</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
     <div class="sidebar-section pt-3 pb-2">
       <div class="subheader small text-uppercase text-secondary fw-semibold">Workspace</div>
       <a
