@@ -71,6 +71,9 @@ body {
   color: #fff;
   border-radius: 0.75rem;
   padding: 0.6rem 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .app-workspace-dropdown-toggle:hover,

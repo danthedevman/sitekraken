@@ -1,14 +1,18 @@
 <aside class="app-sidebar d-none d-md-flex flex-column">
   <div class="app-sidebar-inner">
-    <div class="px-2 pt-3">
+
+    <div class="sidebar-section pb-2">
+      <div class="subheader small text-uppercase text-secondary fw-semibold">Workspace</div>
+         <div class="px-2 mb-1">
       <div class="dropdown">
         <button
-          class="btn app-workspace-dropdown-toggle dropdown-toggle w-100 text-start"
+          class="btn app-workspace-dropdown-toggle w-100 text-start"
           type="button"
           data-bs-toggle="dropdown"
           aria-expanded="false"
           title="<%= workspace.name %>">
           <span class="d-block text-truncate"><%= workspace.name %></span>
+          <span class="bi bi-chevron-down"></span>
         </button>
         <ul class="dropdown-menu w-100 shadow-sm">
           <% const recent = Array.isArray(recentWorkspaces) ? recentWorkspaces.slice(0, 5) : []; %>
@@ -33,9 +37,6 @@
         </ul>
       </div>
     </div>
-
-    <div class="sidebar-section pt-3 pb-2">
-      <div class="subheader small text-uppercase text-secondary fw-semibold">Workspace</div>
       <a
         href="/workspaces/<%= workspace._id %>"
         class="nav-link app-side-link<%= active === 'overview' ? 'active' : '' %>">
