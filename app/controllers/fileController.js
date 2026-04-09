@@ -6,7 +6,7 @@ import {
   removeFileFromVectorStore,
   deleteOpenAIFile
 } from '../services/openaiService.js';
-import { findOwnedWorkspace } from '../services/workspaceService.js';
+import { findOwnedWorkspace, trackRecentWorkspaceVisit } from '../services/workspaceService.js';
 import { serializeDocs, toObjectId } from '../services/dbHelpers.js';
 
 const storage = multer.memoryStorage();
@@ -19,7 +19,9 @@ export const upload = multer({
 });
 
 async function getWorkspace(req) {
-  return findOwnedWorkspace(req.user._id, req.params.workspaceId);
+  const workspace = await findOwnedWorkspace(req.user._id, req.params.workspaceId);
+  trackRecentWorkspaceVisit(req, workspace);
+  return workspace;
 }
 
 export async function index(req, res) {

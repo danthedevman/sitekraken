@@ -4,12 +4,12 @@
   const containerClass = isWorkspacesIndex || hasWorkspaceContext ? 'container-fluid px-4' : 'container';
 %>
 
-<nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
-  <div class="<%= containerClass %>">
+<nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom<%= hasWorkspaceContext ? ' with-sidebar' : '' %>">
+  <div class="<%= containerClass %> d-flex align-items-center w-100 gap-3">
     <a class="navbar-brand fw-bold" href="/">SiteKraken</a>
 
-    <div class="collapse navbar-collapse show">
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+    <div class="collapse navbar-collapse show justify-content-between">
+      <ul class="navbar-nav mb-2 mb-lg-0">
         <% if (currentUser && hasWorkspaceContext) { %>
           <li class="nav-item"><a class="nav-link" href="/workspaces">All workspaces</a></li>
           <li class="nav-item"><a class="nav-link" href="/workspaces/<%= workspace._id %>">Overview</a></li>

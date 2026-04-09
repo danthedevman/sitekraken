@@ -8,7 +8,7 @@ import {
   ensureWorkspaceChatbotDefaults,
   normalizeAllowedDomainsInput
 } from '../models/defaults.js';
-import { findOwnedWorkspace } from '../services/workspaceService.js';
+import { findOwnedWorkspace, trackRecentWorkspaceVisit } from '../services/workspaceService.js';
 import { serializeDoc } from '../services/dbHelpers.js';
 
 const r2 = new S3Client({
@@ -21,7 +21,9 @@ const r2 = new S3Client({
 });
 
 async function getWorkspace(req) {
-  return findOwnedWorkspace(req.user._id, req.params.workspaceId);
+  const workspace = await findOwnedWorkspace(req.user._id, req.params.workspaceId);
+  trackRecentWorkspaceVisit(req, workspace);
+  return workspace;
 }
 
 function parseLines(value) {

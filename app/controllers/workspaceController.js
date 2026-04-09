@@ -6,7 +6,8 @@ import {
 import { createVectorStore } from '../services/openaiService.js';
 import {
   listOwnedWorkspaces,
-  findOwnedWorkspace
+  findOwnedWorkspace,
+  trackRecentWorkspaceVisit
 } from '../services/workspaceService.js';
 
 export async function index(req, res) {
@@ -55,6 +56,7 @@ export async function create(req, res) {
 
 export async function show(req, res) {
   const workspace = await findOwnedWorkspace(req.user._id, req.params.id);
+  trackRecentWorkspaceVisit(req, workspace);
 
   if (!workspace) {
     req.flash('error', 'Workspace not found');
