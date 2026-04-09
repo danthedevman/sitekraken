@@ -93,6 +93,13 @@ export default async function analyticsRoutes(fastify) {
     const now = new Date();
     const { workspace } = access;
 
+    if (workspace?.analytics?.enabled === false) {
+      return reply.code(403).send({
+        success: false,
+        error: "Analytics is disabled for this workspace."
+      });
+    }
+
     const context = {
       pageUrl: payload.pageUrl,
       pathname: payload.pathname,
