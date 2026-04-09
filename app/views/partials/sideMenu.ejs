@@ -1,90 +1,114 @@
-<aside class="app-sidebar d-none d-md-flex flex-column">
+<aside class="app-sidebar d-none d-md-flex flex-column" id="workspace-sidebar">
   <div class="app-sidebar-inner">
+    <div class="sidebar-header d-flex align-items-center justify-content-between px-2 pt-3 pb-2">
+      <a class="sidebar-logo d-flex align-items-center gap-2 text-decoration-none" href="/workspaces">
+        <span class="sidebar-logo-mark"><i class="bi bi-hurricane"></i></span>
+        <span class="sidebar-logo-text fw-bold">SiteKraken</span>
+      </a>
+      <button
+        type="button"
+        class="btn btn-sm app-sidebar-toggle"
+        id="sidebar-toggle-btn"
+        aria-label="Toggle sidebar"
+        title="Collapse sidebar"
+      >
+        <i class="bi bi-layout-sidebar-inset"></i>
+      </button>
+    </div>
 
     <div class="sidebar-section pb-2">
-      <div class="subheader small text-uppercase text-secondary fw-semibold">Workspace</div>
-         <div class="px-2 mb-1">
-      <div class="dropdown">
-        <button
-          class="btn app-workspace-dropdown-toggle w-100 text-start"
-          type="button"
-          data-bs-toggle="dropdown"
-          aria-expanded="false"
-          title="<%= workspace.name %>">
-          <span class="d-block text-truncate"><%= workspace.name %></span>
-          <span class="bi bi-chevron-down"></span>
-        </button>
-        <ul class="dropdown-menu w-100 shadow-sm">
-          <% const recent = Array.isArray(recentWorkspaces) ? recentWorkspaces.slice(0, 5) : []; %>
-          <% if (recent.length > 0) { %>
-            <% recent.forEach((item) => { %>
-              <li>
-                <a
-                  class="dropdown-item <%= String(item.id) === String(workspace._id) ? 'active' : '' %>"
-                  href="/workspaces/<%= item.id %>"
-                  title="<%= item.name %>">
-                  <span class="d-block text-truncate"><%= item.name %></span>
-                </a>
-              </li>
-            <% }) %>
-          <% } else { %>
-            <li><span class="dropdown-item-text text-muted">No recent workspaces</span></li>
-          <% } %>
-          <li><hr class="dropdown-divider"></li>
-          <li>
-            <a class="dropdown-item fw-semibold" href="/workspaces">View all</a>
-          </li>
-        </ul>
+      <div class="subheader small text-uppercase text-secondary fw-semibold">Workspaces</div>
+      <div class="px-2 mb-1">
+        <div class="dropdown">
+          <button
+            class="btn app-workspace-dropdown-toggle w-100 text-start"
+            type="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            title="<%= workspace.name %>">
+            <span class="d-block text-truncate sidebar-link-text"><%= workspace.name %></span>
+            <span class="bi bi-chevron-down sidebar-expand-icon"></span>
+          </button>
+          <ul class="dropdown-menu w-100 shadow-sm">
+            <% const recent = Array.isArray(recentWorkspaces) ? recentWorkspaces.slice(0, 5) : []; %>
+            <% if (recent.length > 0) { %>
+              <% recent.forEach((item) => { %>
+                <li>
+                  <a
+                    class="dropdown-item <%= String(item.id) === String(workspace._id) ? 'active' : '' %>"
+                    href="/workspaces/<%= item.id %>"
+                    title="<%= item.name %>">
+                    <span class="d-block text-truncate"><%= item.name %></span>
+                  </a>
+                </li>
+              <% }) %>
+            <% } else { %>
+              <li><span class="dropdown-item-text text-muted">No recent workspaces</span></li>
+            <% } %>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <a class="dropdown-item fw-semibold" href="/workspaces">View all</a>
+            </li>
+          </ul>
+        </div>
       </div>
-    </div>
-      <a
-        href="/workspaces/<%= workspace._id %>"
-        class="nav-link app-side-link<%= active === 'overview' ? 'active' : '' %>">
-        Overview
+      <a href="/workspaces/<%= workspace._id %>" class="nav-link app-side-link<%= active === 'overview' ? ' active' : '' %>">
+        <i class="bi bi-grid-1x2 app-side-link-icon"></i><span class="app-side-link-text">Overview</span>
       </a>
-       <a
-        href="/workspaces/<%= workspace._id %>/settings"
-        class="nav-link app-side-link<%= active === 'settings' ? 'active' : '' %>">
-        Settings
+      <a href="/workspaces/<%= workspace._id %>/settings" class="nav-link app-side-link<%= active === 'settings' ? ' active' : '' %>">
+        <i class="bi bi-sliders app-side-link-icon"></i><span class="app-side-link-text">Settings</span>
       </a>
     </div>
 
     <nav class="nav flex-column px-0 pb-3">
       <hr class="border my-1"/>
-    <div class="subheader small text-uppercase text-secondary fw-semibold">Modules</div>
-      <a
-        href="/workspaces/<%= workspace._id %>/analytics"
-        class="nav-link app-side-link <%= active === 'analytics' ? 'active' : '' %>">
-        Analytics
+      <div class="subheader small text-uppercase text-secondary fw-semibold">Modules</div>
+      <a href="/workspaces/<%= workspace._id %>/analytics" class="nav-link app-side-link<%= active === 'analytics' ? ' active' : '' %>">
+        <i class="bi bi-graph-up-arrow app-side-link-icon"></i><span class="app-side-link-text">Analytics</span>
       </a>
-
-      <a
-        href="/workspaces/<%= workspace._id %>/announcements"
-        class="nav-link app-side-link <%= active === 'announcements' ? 'active' : '' %>">
-        Banners
+      <a href="/workspaces/<%= workspace._id %>/announcements" class="nav-link app-side-link<%= active === 'announcements' ? ' active' : '' %>">
+        <i class="bi bi-megaphone app-side-link-icon"></i><span class="app-side-link-text">Banners</span>
       </a>
-
-      <a
-        href="/workspaces/<%= workspace._id %>/chatbot"
-        class="nav-link app-side-link <%= active === 'chatbot' ? 'active' : '' %>">
-        Chatbot
+      <a href="/workspaces/<%= workspace._id %>/chatbot" class="nav-link app-side-link<%= active === 'chatbot' ? ' active' : '' %>">
+        <i class="bi bi-robot app-side-link-icon"></i><span class="app-side-link-text">Chatbot</span>
       </a>
-
-      <a
-        href="/workspaces/<%= workspace._id %>/feedback"
-        class="nav-link app-side-link <%= active === 'feedback' ? 'active' : '' %>">
-        Feedback
+      <a href="/workspaces/<%= workspace._id %>/feedback" class="nav-link app-side-link<%= active === 'feedback' ? ' active' : '' %>">
+        <i class="bi bi-chat-square-dots app-side-link-icon"></i><span class="app-side-link-text">Feedback</span>
       </a>
-      <a
-        href="/workspaces/<%= workspace._id %>/logs"
-        class="nav-link app-side-link <%= active === 'logs' ? 'active' : '' %>">
-        Logs
+      <a href="/workspaces/<%= workspace._id %>/logs" class="nav-link app-side-link<%= active === 'logs' ? ' active' : '' %>">
+        <i class="bi bi-journal-text app-side-link-icon"></i><span class="app-side-link-text">Logs</span>
       </a>
-      <a
-        href="/workspaces/<%= workspace._id %>/scripts"
-        class="nav-link app-side-link <%= active === 'scripts' ? 'active' : '' %>">
-        Scripts
+      <a href="/workspaces/<%= workspace._id %>/scripts" class="nav-link app-side-link<%= active === 'scripts' ? ' active' : '' %>">
+        <i class="bi bi-code-slash app-side-link-icon"></i><span class="app-side-link-text">Scripts</span>
       </a>
     </nav>
   </div>
 </aside>
+
+<script>
+  (function () {
+    const sidebar = document.getElementById('workspace-sidebar');
+    const toggleBtn = document.getElementById('sidebar-toggle-btn');
+    const storageKey = 'sitekraken.sidebarCollapsed';
+    if (!sidebar || !toggleBtn) return;
+
+    const setCollapsed = (collapsed) => {
+      sidebar.classList.toggle('is-collapsed', collapsed);
+      document.body.classList.toggle('sidebar-collapsed', collapsed);
+      toggleBtn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+      const icon = toggleBtn.querySelector('i');
+      if (icon) {
+        icon.className = collapsed ? 'bi bi-layout-sidebar' : 'bi bi-layout-sidebar-inset';
+      }
+    };
+
+    const savedCollapsed = localStorage.getItem(storageKey) === 'true';
+    setCollapsed(savedCollapsed);
+
+    toggleBtn.addEventListener('click', () => {
+      const next = !sidebar.classList.contains('is-collapsed');
+      setCollapsed(next);
+      localStorage.setItem(storageKey, String(next));
+    });
+  })();
+</script>
