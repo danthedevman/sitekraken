@@ -1,0 +1,54 @@
+<%- include('../partials/chatbotTabLinks', { workspace, activeTab: 'interactions' }) %>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h3 mb-1">Interaction <code><%= interaction.threadId %></code></h1>
+    <div class="text-muted small">Updated <%= interaction.updatedAtLabel || '—' %></div>
+  </div>
+  <a href="/workspaces/<%= workspace._id %>/chatbot/interactions" class="btn btn-light">Back to interactions</a>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-3">
+        <div class="text-muted small">Source</div>
+        <div><%= interaction.source || '—' %></div>
+      </div>
+      <div class="col-md-3">
+        <div class="text-muted small">Site</div>
+        <div><%= interaction.siteName || '—' %></div>
+      </div>
+      <div class="col-md-3">
+        <div class="text-muted small">Created</div>
+        <div><%= interaction.createdAtLabel || '—' %></div>
+      </div>
+      <div class="col-md-3">
+        <div class="text-muted small">Page</div>
+        <% if (interaction.pageUrl) { %>
+          <a href="<%= interaction.pageUrl %>" target="_blank" rel="noopener noreferrer"><%= interaction.pageTitle || interaction.pageUrl %></a>
+        <% } else { %>
+          <div><%= interaction.pageTitle || '—' %></div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">Chat messages (<%= chatMessages.length %>)</div>
+  <div class="list-group list-group-flush">
+    <% if (!chatMessages.length) { %>
+      <div class="list-group-item text-muted">No messages found for this interaction.</div>
+    <% } %>
+    <% chatMessages.forEach((message) => { %>
+      <div class="list-group-item">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="badge text-bg-<%= message.role === 'assistant' ? 'primary' : 'secondary' %>"><%= message.role || 'unknown' %></span>
+          <small class="text-muted"><%= message.createdAtLabel || '—' %></small>
+        </div>
+        <pre class="mb-0" style="white-space: pre-wrap; word-break: break-word;"><%= message.text || '' %></pre>
+      </div>
+    <% }) %>
+  </div>
+</div>

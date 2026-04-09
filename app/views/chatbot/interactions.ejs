@@ -1,0 +1,41 @@
+<%- include('../partials/chatbotTabLinks', { workspace, activeTab: 'interactions' }) %>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">Chatbot interactions · <%= workspace.name %></h1>
+  <a href="/workspaces/<%= workspace._id %>/chatbot" class="btn btn-light">Back</a>
+</div>
+
+<%
+  const columns = [
+    { key: 'threadId', label: 'Thread', sortType: 'string' },
+    { key: 'messageCount', label: 'Messages', sortType: 'number' },
+    { key: 'source', label: 'Source', sortType: 'string' },
+    { key: 'pageTitle', label: 'Page', sortType: 'string' },
+    { key: 'updatedAt', label: 'Updated', sortType: 'date' }
+  ];
+
+  const rows = interactions.map((interaction) => ({
+    href: interaction.interactionHref,
+    values: {
+      threadId: interaction.threadId,
+      messageCount: interaction.messageCount,
+      source: interaction.source,
+      pageTitle: interaction.pageTitle || interaction.pageUrl,
+      updatedAt: interaction.updatedAtIso
+    },
+    cells: {
+      threadId: `<code>${interaction.threadId}</code>`,
+      messageCount: String(interaction.messageCount),
+      source: interaction.source,
+      pageTitle: interaction.pageTitle || interaction.pageUrl || '<span class="text-muted">(unknown)</span>',
+      updatedAt: interaction.updatedAtLabel || '<span class="text-muted">—</span>'
+    }
+  }));
+%>
+
+<%- include('../partials/bootstrapTableWidget', {
+  tableId: 'interactions-table',
+  defaultPageSize: 20,
+  columns,
+  rows
+}) %>

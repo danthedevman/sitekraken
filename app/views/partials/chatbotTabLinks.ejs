@@ -1,0 +1,8 @@
+<%
+  const tabs = [
+    { key: 'chatbot', label: 'Configuration', href: `/workspaces/${workspace._id}/chatbot` },
+    { key: 'interactions', label: 'Interactions', href: `/workspaces/${workspace._id}/chatbot/interactions` }
+  ];
+%>
+
+<%- include('./tabLinks', { tabs, activeTab }) %>
