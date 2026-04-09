@@ -1,20 +1,58 @@
+<%
+  const hasWorkspaceContext = typeof workspace !== 'undefined' && workspace;
+  const isWorkspacesIndex = currentPath === '/workspaces';
+  const containerClass = isWorkspacesIndex || hasWorkspaceContext ? 'container-fluid px-4' : 'container';
+%>
+
 <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
-  <div class="container">
+  <div class="<%= containerClass %>">
     <a class="navbar-brand fw-bold" href="/">SiteKraken</a>
 
     <div class="collapse navbar-collapse show">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <% if (currentUser) { %>
+        <% if (currentUser && hasWorkspaceContext) { %>
+          <li class="nav-item"><a class="nav-link" href="/workspaces">All workspaces</a></li>
+          <li class="nav-item"><a class="nav-link" href="/workspaces/<%= workspace._id %>">Overview</a></li>
+          <li class="nav-item"><a class="nav-link" href="/workspaces/<%= workspace._id %>/files">Files</a></li>
+          <li class="nav-item"><a class="nav-link" href="/workspaces/<%= workspace._id %>/knowledge">Knowledge</a></li>
+          <li class="nav-item"><a class="nav-link" href="/workspaces/<%= workspace._id %>/chatbot">Chatbot</a></li>
+        <% } else if (currentUser) { %>
           <li class="nav-item"><a class="nav-link" href="/workspaces">Workspaces</a></li>
-          <li class="nav-item"><a class="nav-link" href="/auth/profile">Profile</a></li>
         <% } %>
       </ul>
 
       <div class="d-flex gap-2">
         <% if (currentUser) { %>
-          <form action="/auth/logout" method="POST">
-            <button class="btn btn-outline-danger btn-sm">Logout</button>
-          </form>
+          <% if (hasWorkspaceContext) { %>
+            <button
+              type="button"
+              class="btn btn-outline-secondary btn-sm"
+              data-bs-toggle="modal"
+              data-bs-target="#embedScriptModal"
+            >
+              Script
+            </button>
+          <% } %>
+
+          <div class="dropdown">
+            <button
+              class="btn btn-outline-primary btn-sm dropdown-toggle"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              Profile
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="/auth/profile">View profile</a></li>
+              <li><hr class="dropdown-divider" /></li>
+              <li>
+                <form action="/auth/logout" method="POST">
+                  <button class="dropdown-item text-danger">Logout</button>
+                </form>
+              </li>
+            </ul>
+          </div>
         <% } else { %>
           <a href="/auth/login" class="btn btn-primary btn-sm">Login with Auth0</a>
         <% } %>
@@ -22,3 +60,30 @@
     </div>
   </div>
 </nav>
+
+<% if (currentUser && hasWorkspaceContext) { %>
+  <div class="modal fade" id="embedScriptModal" tabindex="-1" aria-labelledby="embedScriptModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="embedScriptModalLabel">Embeddable script tag</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="small text-muted mb-2">Copy and paste this snippet into your site.</p>
+          <textarea id="navbar-embed-script" class="form-control small" rows="4" readonly><script src="<%= appUrl ? `${appUrl}/public/lib/embed.js` : '/public/lib/embed.js' %>" data-api-key="<%= workspace.apiKey %>"></script></textarea>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-primary btn-sm"
+            onclick="navigator.clipboard.writeText(document.getElementById('navbar-embed-script').value)"
+          >
+            Copy script tag
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+<% } %>
