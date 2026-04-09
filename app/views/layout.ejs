@@ -19,7 +19,7 @@
     <%- include('partials/navbar') %>
 
     <% if (typeof workspace !== 'undefined' && workspace) { %>
-      <%- include('partials/sideMenu', { workspace, active: active || 'dashboard' }) %>
+      <%- include('partials/sideMenu', { workspace, active: (typeof active !== 'undefined' && active) ? active : 'dashboard' }) %>
     <% } %>
 
     <main class="app-main <%= (typeof workspace !== 'undefined' && workspace) ? 'with-sidebar' : '' %>">
