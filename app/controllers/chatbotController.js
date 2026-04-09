@@ -2,7 +2,7 @@ import { ObjectId } from 'mongodb';
 import crypto from 'node:crypto';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
-import { getCollections } from '../config/db.js';
+import { getCollections, getDB } from '../config/db.js';
 import {
   defaultChatbotConfig,
   ensureWorkspaceChatbotDefaults,
@@ -111,6 +111,22 @@ function sanitizeDimension(value, fallback) {
   return fallback;
 }
 
+
+function sanitizeThreadId(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  return raw.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 120);
+}
+
+function formatDateTime(value) {
+  if (!value) return '';
+
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  return date.toLocaleString();
+}
+
 async function uploadLogoToR2({ fileBuffer, mimeType, workspaceId, originalName }) {
   if (!fileBuffer?.length) return null;
 
@@ -191,6 +207,120 @@ export async function index(req, res) {
     allowedDomainsText: Array.isArray(serializedWorkspace?.allowedDomains)
       ? serializedWorkspace.allowedDomains.join('\n')
       : ''
+  });
+}
+
+
+export async function interactions(req, res) {
+  const workspace = await getWorkspace(req);
+
+  if (!workspace) {
+    req.flash('error', 'Workspace not found');
+    return res.redirect('/workspaces');
+  }
+
+  const db = getDB();
+  const threads = db.collection('chat_threads');
+  const messages = db.collection('chat_messages');
+  const workspaceId = String(workspace._id);
+
+  const latestThreads = await threads
+    .find({ workspaceId })
+    .sort({ updatedAt: -1, createdAt: -1 })
+    .limit(1000)
+    .toArray();
+
+  const threadIds = latestThreads
+    .map((thread) => String(thread.threadId || ''))
+    .filter(Boolean);
+  const counts = new Map();
+
+  if (threadIds.length) {
+    const grouped = await messages
+      .aggregate([
+        { $match: { workspaceId, threadId: { $in: threadIds } } },
+        { $group: { _id: '$threadId', count: { $sum: 1 } } }
+      ])
+      .toArray();
+
+    grouped.forEach((item) => {
+      counts.set(String(item._id), Number(item.count || 0));
+    });
+  }
+
+  const interactionRows = latestThreads.map((thread) => {
+    const threadId = String(thread.threadId || '');
+    const updatedAt = thread.updatedAt || thread.createdAt;
+
+    return {
+      threadId,
+      source: String(thread.source || 'website'),
+      siteName: String(thread.siteName || ''),
+      pageTitle: String(thread.pageTitle || ''),
+      pageUrl: String(thread.pageUrl || ''),
+      messageCount: counts.get(threadId) || 0,
+      updatedAtLabel: formatDateTime(updatedAt),
+      updatedAtIso: updatedAt ? new Date(updatedAt).toISOString() : '',
+      interactionHref: `/workspaces/${workspaceId}/chatbot/interactions/${encodeURIComponent(threadId)}`
+    };
+  });
+
+  res.render('chatbot/interactions', {
+    workspace: serializeDoc(workspace),
+    active: 'chatbot',
+    interactions: interactionRows
+  });
+}
+
+export async function showInteraction(req, res) {
+  const workspace = await getWorkspace(req);
+
+  if (!workspace) {
+    req.flash('error', 'Workspace not found');
+    return res.redirect('/workspaces');
+  }
+
+  const threadId = sanitizeThreadId(req.params.threadId);
+
+  if (!threadId) {
+    req.flash('error', 'Invalid interaction id');
+    return res.redirect(`/workspaces/${workspace._id}/chatbot/interactions`);
+  }
+
+  const db = getDB();
+  const threads = db.collection('chat_threads');
+  const messages = db.collection('chat_messages');
+  const workspaceId = String(workspace._id);
+
+  const interaction = await threads.findOne({ workspaceId, threadId });
+
+  if (!interaction) {
+    req.flash('error', 'Interaction not found');
+    return res.redirect(`/workspaces/${workspace._id}/chatbot/interactions`);
+  }
+
+  const chatMessages = await messages
+    .find({ workspaceId, threadId })
+    .sort({ createdAt: 1, _id: 1 })
+    .toArray();
+
+  res.render('chatbot/interaction-show', {
+    workspace: serializeDoc(workspace),
+    active: 'chatbot',
+    interaction: {
+      threadId,
+      source: String(interaction.source || 'website'),
+      siteName: String(interaction.siteName || ''),
+      pageTitle: String(interaction.pageTitle || ''),
+      pageUrl: String(interaction.pageUrl || ''),
+      createdAtLabel: formatDateTime(interaction.createdAt),
+      updatedAtLabel: formatDateTime(interaction.updatedAt || interaction.createdAt)
+    },
+    chatMessages: chatMessages.map((message) => ({
+      role: String(message.role || ''),
+      text: String(message.text || ''),
+      createdAtLabel: formatDateTime(message.createdAt)
+    }))
   });
 }
 

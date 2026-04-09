@@ -6,6 +6,8 @@ import fileRoutes from './files.js';
 import knowledgeRoutes from './knowledge.js';
 import {
   index,
+  interactions,
+  showInteraction,
   update,
   regenerateApiKey
 } from '../controllers/chatbotController.js';
@@ -21,6 +23,8 @@ const upload = multer({
 
 router.get('/', ensureAuth, index);
 router.post('/', ensureAuth, upload.single('logo'), update);
+router.get('/interactions', ensureAuth, interactions);
+router.get('/interactions/:threadId', ensureAuth, showInteraction);
 router.post('/regenerate-key', ensureAuth, regenerateApiKey);
 router.use('/files', fileRoutes);
 router.use('/knowledge', knowledgeRoutes);
