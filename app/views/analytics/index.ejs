@@ -1,8 +1,11 @@
 <%- include('../partials/tabLinks', { workspace, activeTab: 'analytics' }) %>
-<%- include('../partials/analyticsTabLinks', { workspace, analyticsTab: 'dashboard' }) %>
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h3 mb-0">Analytics dashboard · <%= workspace.name %></h1>
+  <h1 class="h3 mb-0">Analytics · <%= workspace.name %></h1>
   <span class="badge text-bg-light border"><%= dateRangeLabel %></span>
+</div>
+
+<div class="alert alert-info mb-3" role="alert">
+  Analytics tracking is built in for this workspace—no additional script tag is needed.
 </div>
 
 <div class="card mb-3 border-0 bg-light">

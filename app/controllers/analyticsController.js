@@ -10,24 +10,6 @@ function toPct(part, total) {
   return Math.round((part / total) * 1000) / 10;
 }
 
-function buildAnalyticsSnippet(workspace) {
-  const appUrl = String(process.env.APP_URL || '').replace(/\/+$/, '');
-  const apiUrl = appUrl || '/';
-  const scriptSrc = appUrl
-    ? `${appUrl}/public/lib/analytics.js`
-    : '/public/lib/analytics.js';
-
-  const moduleConfig = {
-    apiUrl,
-    trackClicks: true,
-    trackLinks: true,
-    trackButtons: true,
-    trackScrollDepth: true,
-  };
-
-  return `<script src="${scriptSrc}" data-api-key="${workspace.apiKey}" data-module-config='${JSON.stringify(moduleConfig)}'></script>`;
-}
-
 async function getWorkspace(req) {
   const { workspaces } = getCollections();
   const workspace = await findOwnedWorkspace(req.user._id, req.params.workspaceId);
@@ -54,10 +36,6 @@ async function getWorkspace(req) {
 }
 
 export async function index(req, res) {
-  return res.redirect(`/workspaces/${req.params.workspaceId}/analytics/dashboard`);
-}
-
-export async function dashboard(req, res) {
   const workspace = await getWorkspace(req);
 
   const db = getDB();
@@ -192,16 +170,6 @@ export async function dashboard(req, res) {
   });
 }
 
-export async function installation(req, res) {
-  const workspace = await getWorkspace(req);
-
-  res.render('analytics/installation', {
-    workspace,
-    active: 'analytics',
-    analyticsScriptTag: buildAnalyticsSnippet(workspace)
-  });
-}
-
 export async function toggleEnabled(req, res) {
   const { workspaces } = getCollections();
   const workspace = await getWorkspace(req);
@@ -218,5 +186,5 @@ export async function toggleEnabled(req, res) {
   );
 
   req.flash('success', shouldEnable ? 'Analytics activated.' : 'Analytics deactivated.');
-  return res.redirect(`/workspaces/${workspace._id}/analytics/dashboard`);
+  return res.redirect(`/workspaces/${workspace._id}/analytics`);
 }
