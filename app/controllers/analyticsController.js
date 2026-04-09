@@ -4,6 +4,7 @@ import { getCollections, getDB } from '../config/db.js';
 import { ensureWorkspaceChatbotDefaults } from '../models/defaults.js';
 import { findOwnedWorkspace, trackRecentWorkspaceVisit } from '../services/workspaceService.js';
 import { serializeDoc } from '../services/dbHelpers.js';
+import { buildWorkspaceTabs } from '../services/workspaceTabs.js';
 
 function toPct(part, total) {
   if (!total) return 0;
@@ -173,6 +174,7 @@ export async function dashboard(req, res) {
   res.render('analytics/index', {
     workspace,
     active: 'analytics',
+    tabs: buildWorkspaceTabs(workspace._id),
     scorecards: [
       { label: 'Events (7d)', value: totalEvents, helper: 'All tracked events' },
       { label: 'Page views (7d)', value: pageViews, helper: 'Page view events only' },
@@ -198,6 +200,7 @@ export async function installation(req, res) {
   res.render('analytics/installation', {
     workspace,
     active: 'analytics',
+    tabs: buildWorkspaceTabs(workspace._id),
     analyticsScriptTag: buildAnalyticsSnippet(workspace)
   });
 }

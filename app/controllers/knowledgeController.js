@@ -12,6 +12,7 @@ import {
 } from '../services/openaiService.js';
 import { findOwnedWorkspace, trackRecentWorkspaceVisit } from '../services/workspaceService.js';
 import { serializeDoc, serializeDocs, toObjectId } from '../services/dbHelpers.js';
+import { buildWorkspaceTabs } from '../services/workspaceTabs.js';
 
 async function getWorkspace(req) {
   const workspace = await findOwnedWorkspace(req.user._id, req.params.workspaceId);
@@ -80,6 +81,7 @@ export async function index(req, res) {
   res.render('knowledge/index', {
     workspace,
     active: 'chatbot',
+    tabs: buildWorkspaceTabs(workspace._id),
     entries: serializeDocs(docs)
   });
 }
@@ -94,7 +96,8 @@ export async function newForm(req, res) {
 
   res.render('knowledge/new', {
     workspace,
-    active: 'chatbot'
+    active: 'chatbot',
+    tabs: buildWorkspaceTabs(workspace._id)
   });
 }
 
@@ -172,6 +175,7 @@ export async function show(req, res) {
   res.render('knowledge/show', {
     workspace,
     active: 'chatbot',
+    tabs: buildWorkspaceTabs(workspace._id),
     entry: serializeDoc(entry),
     html: marked(entry.body)
   });
@@ -199,6 +203,7 @@ export async function editForm(req, res) {
   res.render('knowledge/edit', {
     workspace,
     active: 'chatbot',
+    tabs: buildWorkspaceTabs(workspace._id),
     entry: serializeDoc(entry)
   });
 }

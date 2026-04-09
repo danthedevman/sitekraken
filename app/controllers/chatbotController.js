@@ -10,6 +10,7 @@ import {
 } from '../models/defaults.js';
 import { findOwnedWorkspace, trackRecentWorkspaceVisit } from '../services/workspaceService.js';
 import { serializeDoc } from '../services/dbHelpers.js';
+import { buildWorkspaceTabs } from '../services/workspaceTabs.js';
 
 const r2 = new S3Client({
   region: 'auto',
@@ -181,6 +182,7 @@ export async function index(req, res) {
   res.render('chatbot/index', {
     workspace: serializedWorkspace,
     active:"chatbot",
+    tabs: buildWorkspaceTabs(serializedWorkspace._id),
     chatbot,
     config,
     embedScriptTag: buildEmbedScriptTag(serializedWorkspace),
