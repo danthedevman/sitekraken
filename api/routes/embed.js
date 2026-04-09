@@ -1,26 +1,37 @@
 import { resolveWorkspaceAccess } from "../lib/workspace-auth.js";
 
-function buildModulesFromWorkspace(workspace) {
+function buildModulesFromWorkspace(workspace, request) {
   const chatModule = workspace.chatbot || {};
+  const analyticsModule = workspace.analytics || {};
   const allowedDomains = Array.isArray(workspace.allowedDomains)
     ? workspace.allowedDomains
     : [];
 
+  const baseUrl = `${request.protocol}://${request.hostname}`;
+
   return [
     {
       ...chatModule,
+      name: chatModule.name || "chat",
       config: {
         ...(chatModule.config || {}),
         allowedDomains
       }
+    },
+    {
+      ...analyticsModule,
+      name: analyticsModule.name || "analytics",
+      scriptUrl: analyticsModule.scriptUrl || `${baseUrl}/public/lib/analytics.js`,
+      module:
+        typeof analyticsModule.module === "boolean" ? analyticsModule.module : false,
+      enabled:
+        typeof analyticsModule.enabled === "boolean" ? analyticsModule.enabled : true,
+      config: {
+        ...(analyticsModule.config || {}),
+        allowedDomains,
+        apiUrl: baseUrl,
+      }
     }
-    /*{
-      name: "analytics",
-      enabled: false,
-      scriptUrl: "http://localhost:4001/analytics.js",
-      module: true,
-      config: {},
-    },*/
   ];
 }
 
@@ -43,7 +54,7 @@ export default async function embedRoutes(fastify) {
       workspaceId: String(workspace._id),
       name: workspace.name,
       allowedDomains: workspace.allowedDomains || [],
-      modules: buildModulesFromWorkspace(workspace),
+      modules: buildModulesFromWorkspace(workspace, request),
     });
   });
 }

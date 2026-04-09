@@ -156,6 +156,7 @@ export async function index(req, res) {
   if (
     hydratedWorkspace.apiKey !== workspace.apiKey ||
     !workspace.chatbot ||
+    !workspace.analytics ||
     !Array.isArray(workspace.allowedDomains)
   ) {
     await workspaces.updateOne(
@@ -165,6 +166,7 @@ export async function index(req, res) {
           apiKey: hydratedWorkspace.apiKey,
           allowedDomains: hydratedWorkspace.allowedDomains,
           chatbot: hydratedWorkspace.chatbot,
+          analytics: hydratedWorkspace.analytics,
           updatedAt: new Date()
         }
       }
