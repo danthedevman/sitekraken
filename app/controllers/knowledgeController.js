@@ -143,7 +143,7 @@ export async function create(req, res) {
     'success',
     `Knowledge ${actionType === 'publish' ? 'published' : 'saved as draft'}`
   );
-  res.redirect(`/workspaces/${workspace._id}/knowledge`);
+  res.redirect(`/workspaces/${workspace._id}/chatbot/knowledge`);
 }
 
 export async function show(req, res) {
@@ -162,7 +162,7 @@ export async function show(req, res) {
 
   if (!entry) {
     req.flash('error', 'Knowledge entry not found');
-    return res.redirect(`/workspaces/${workspace._id}/knowledge`);
+    return res.redirect(`/workspaces/${workspace._id}/chatbot/knowledge`);
   }
 
   res.render('knowledge/show', {
@@ -188,7 +188,7 @@ export async function editForm(req, res) {
 
   if (!entry) {
     req.flash('error', 'Knowledge entry not found');
-    return res.redirect(`/workspaces/${workspace._id}/knowledge`);
+    return res.redirect(`/workspaces/${workspace._id}/chatbot/knowledge`);
   }
 
   res.render('knowledge/edit', {
@@ -214,7 +214,7 @@ export async function update(req, res) {
 
   if (!entry) {
     req.flash('error', 'Knowledge entry not found');
-    return res.redirect(`/workspaces/${workspace._id}/knowledge`);
+    return res.redirect(`/workspaces/${workspace._id}/chatbot/knowledge`);
   }
 
   const updateDoc = {
@@ -247,7 +247,7 @@ export async function update(req, res) {
   );
 
   req.flash('success', 'Knowledge updated');
-  res.redirect(`/workspaces/${workspace._id}/knowledge`);
+  res.redirect(`/workspaces/${workspace._id}/chatbot/knowledge`);
 }
 
 export async function destroy(req, res) {
@@ -266,12 +266,12 @@ export async function destroy(req, res) {
 
   if (!entry) {
     req.flash('error', 'Knowledge entry not found');
-    return res.redirect(`/workspaces/${workspace._id}/knowledge`);
+    return res.redirect(`/workspaces/${workspace._id}/chatbot/knowledge`);
   }
 
   await cleanupKnowledgeAssets(workspace, entry);
   await knowledgeEntries.deleteOne({ _id: entry._id });
 
   req.flash('success', 'Knowledge deleted');
-  res.redirect(`/workspaces/${workspace._id}/knowledge`);
+  res.redirect(`/workspaces/${workspace._id}/chatbot/knowledge`);
 }

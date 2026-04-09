@@ -55,7 +55,7 @@ export async function create(req, res) {
 
   if (!req.file) {
     req.flash('error', 'No file uploaded');
-    return res.redirect(`/workspaces/${req.params.workspaceId}/files`);
+    return res.redirect(`/workspaces/${req.params.workspaceId}/chatbot/files`);
   }
 
   const uploaded = await uploadBuffer(
@@ -81,7 +81,7 @@ export async function create(req, res) {
   });
 
   req.flash('success', 'File uploaded to OpenAI and linked to vector store');
-  res.redirect(`/workspaces/${workspace._id}/files`);
+  res.redirect(`/workspaces/${workspace._id}/chatbot/files`);
 }
 
 export async function destroy(req, res) {
@@ -100,7 +100,7 @@ export async function destroy(req, res) {
 
   if (!file) {
     req.flash('error', 'File not found');
-    return res.redirect(`/workspaces/${workspace._id}/files`);
+    return res.redirect(`/workspaces/${workspace._id}/chatbot/files`);
   }
 
   if (file.vectorStoreFileId) {
@@ -125,5 +125,5 @@ export async function destroy(req, res) {
   await workspaceFiles.deleteOne({ _id: file._id });
 
   req.flash('success', 'File removed');
-  res.redirect(`/workspaces/${workspace._id}/files`);
+  res.redirect(`/workspaces/${workspace._id}/chatbot/files`);
 }

@@ -16,8 +16,6 @@ import addLocals from './middleware/locals.js';
 import indexRoutes from './routes/index.js';
 import authRoutes from './routes/auth.js';
 import workspaceRoutes from './routes/workspaces.js';
-import fileRoutes from './routes/files.js';
-import knowledgeRoutes from './routes/knowledge.js';
 import chatbotRoutes from './routes/chatbot.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -66,8 +64,6 @@ async function startServer() {
   app.use('/auth', authRoutes);
   app.use('/', indexRoutes);
   app.use('/workspaces', workspaceRoutes);
-  app.use('/workspaces/:workspaceId/files', fileRoutes);
-  app.use('/workspaces/:workspaceId/knowledge', knowledgeRoutes);
   app.use('/workspaces/:workspaceId/chatbot', chatbotRoutes);
 
   app.use((req, res) => {

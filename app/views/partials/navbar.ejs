@@ -13,8 +13,6 @@
         <% if (currentUser && hasWorkspaceContext) { %>
           <li class="nav-item"><a class="nav-link" href="/workspaces">All workspaces</a></li>
           <li class="nav-item"><a class="nav-link" href="/workspaces/<%= workspace._id %>">Overview</a></li>
-          <li class="nav-item"><a class="nav-link" href="/workspaces/<%= workspace._id %>/files">Files</a></li>
-          <li class="nav-item"><a class="nav-link" href="/workspaces/<%= workspace._id %>/knowledge">Knowledge</a></li>
           <li class="nav-item"><a class="nav-link" href="/workspaces/<%= workspace._id %>/chatbot">Chatbot</a></li>
         <% } else if (currentUser) { %>
           <li class="nav-item"><a class="nav-link" href="/workspaces">Workspaces</a></li>
