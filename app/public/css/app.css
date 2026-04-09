@@ -14,6 +14,7 @@ pre {
 :root {
   --navbar-height: 56px;
   --sidebar-width: 260px;
+  --sidebar-width-collapsed: 84px;
   --sidebar-bg: #202123;
   --sidebar-border: #2f3037;
   --sidebar-link: #ececf1;
@@ -35,11 +36,12 @@ body {
 
 .navbar.with-sidebar {
   margin-left: var(--sidebar-width);
+  transition: margin-left 0.2s ease;
 }
 
 .app-sidebar {
   position: fixed;
-  top: 0;/*var(--navbar-height);*/
+  top: 0;
   left: 0;
   bottom: 0;
   width: var(--sidebar-width);
@@ -47,6 +49,7 @@ body {
   border-right: 1px solid var(--sidebar-border);
   overflow-y: auto;
   z-index: 1020;
+  transition: width 0.2s ease;
 }
 
 .app-sidebar-inner {
@@ -58,9 +61,21 @@ body {
   border-radius: 0.75rem;
   padding: 0.7rem 0.9rem;
   margin-bottom: 0.25rem;
-  margin-left:.5rem;
+  margin-left: .5rem;
   margin-right: .5rem;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.app-side-link-icon {
+  min-width: 1.1rem;
+  text-align: center;
+}
+
+.app-side-link-text {
+  white-space: nowrap;
 }
 
 .subheader{
@@ -105,12 +120,78 @@ body {
 .app-main.with-sidebar {
   margin-left: var(--sidebar-width);
   min-height: 100vh;
+  transition: margin-left 0.2s ease;
 }
 
 .app-sidebar .text-muted,
 .app-sidebar .text-secondary,
 .app-sidebar .small {
   color: var(--sidebar-link-muted) !important;
+}
+
+
+.sidebar-header {
+  border-bottom: 1px solid var(--sidebar-border);
+}
+
+.sidebar-logo {
+  color: #fff;
+  min-width: 0;
+}
+
+.sidebar-logo:hover {
+  color: #fff;
+}
+
+.sidebar-logo-mark {
+  width: 1.9rem;
+  height: 1.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.app-sidebar-toggle {
+  color: var(--sidebar-link-muted);
+  border: 1px solid var(--sidebar-border);
+}
+
+.app-sidebar-toggle:hover {
+  color: #fff;
+  border-color: var(--sidebar-link-muted);
+}
+
+body.sidebar-collapsed .app-sidebar {
+  width: var(--sidebar-width-collapsed);
+}
+
+body.sidebar-collapsed .navbar.with-sidebar,
+body.sidebar-collapsed .app-main.with-sidebar {
+  margin-left: var(--sidebar-width-collapsed);
+}
+
+body.sidebar-collapsed .sidebar-logo-text,
+body.sidebar-collapsed .subheader,
+body.sidebar-collapsed .app-side-link-text,
+body.sidebar-collapsed .sidebar-link-text,
+body.sidebar-collapsed .sidebar-expand-icon {
+  display: none !important;
+}
+
+body.sidebar-collapsed .app-workspace-dropdown-toggle {
+  justify-content: center;
+}
+
+body.sidebar-collapsed .app-side-link {
+  justify-content: center;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+body.sidebar-collapsed .app-sidebar-toggle {
+  margin-left: auto;
 }
 
 @media (max-width: 767.98px) {
