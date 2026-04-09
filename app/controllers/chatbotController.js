@@ -176,6 +176,7 @@ export async function index(req, res) {
 
   res.render('chatbot/index', {
     workspace: serializedWorkspace,
+    active:"chatbot",
     chatbot,
     config,
     embedScriptTag: buildEmbedScriptTag(serializedWorkspace),

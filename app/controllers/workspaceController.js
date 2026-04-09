@@ -11,7 +11,7 @@ import {
 
 export async function index(req, res) {
   const workspaces = await listOwnedWorkspaces(req.user._id);
-  res.render('workspaces/index', { workspaces });
+  res.render('workspaces/index', { workspaces});
 }
 
 export function newForm(req, res) {
@@ -61,5 +61,5 @@ export async function show(req, res) {
     return res.redirect('/workspaces');
   }
 
-  res.render('workspaces/show', { workspace });
+  res.render('workspaces/show', { workspace, active: "dashboard" });
 }

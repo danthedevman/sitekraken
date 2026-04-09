@@ -1,0 +1,18 @@
+<%
+  const tabs = [
+    { key: 'files', label: 'Files', href: `/workspaces/${workspace._id}/files` },
+    { key: 'knowledge', label: 'Knowledge', href: `/workspaces/${workspace._id}/knowledge` }
+  ];
+%>
+
+<ul class="nav nav-tabs mb-4">
+  <% tabs.forEach(tab => { %>
+    <li class="nav-item" role="presentation">
+      <a
+        href="<%= tab.href %>"
+        class="nav-link <%= activeTab === tab.key ? 'active' : '' %>">
+        <%= tab.label %>
+      </a>
+    </li>
+  <% }) %>
+</ul>
