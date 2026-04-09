@@ -1,12 +1,3 @@
-<%
-  const tabs = [
-    { key: 'chatbot', label: 'Chatbot', href: `/workspaces/${workspace._id}/chatbot` },
-    { key: 'files', label: 'Files', href: `/workspaces/${workspace._id}/chatbot/files` },
-    { key: 'knowledge', label: 'Knowledge', href: `/workspaces/${workspace._id}/chatbot/knowledge` },
-    { key: 'analytics', label: 'Analytics', href: `/workspaces/${workspace._id}/analytics` }
-  ];
-%>
-
 <ul class="nav nav-tabs mb-4">
   <% tabs.forEach(tab => { %>
     <li class="nav-item" role="presentation">
