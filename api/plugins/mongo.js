@@ -25,6 +25,9 @@ async function mongoPlugin(fastify) {
     { expireAfterSeconds: 0 }
   );
 
+  await db.collection("website_analytics_events").createIndex({ workspaceId: 1, createdAt: -1 });
+  await db.collection("website_analytics_events").createIndex({ workspaceId: 1, type: 1, createdAt: -1 });
+  await db.collection("website_analytics_events").createIndex({ workspaceId: 1, pathname: 1, createdAt: -1 });
 
   fastify.addHook("onClose", async function () {
     await client.close();
