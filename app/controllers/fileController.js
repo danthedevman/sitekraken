@@ -40,6 +40,7 @@ export async function index(req, res) {
 
   res.render('files/index', {
     workspace,
+    active: 'chatbot',
     files: serializeDocs(docs)
   });
 }

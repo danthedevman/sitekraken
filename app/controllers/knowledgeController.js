@@ -79,6 +79,7 @@ export async function index(req, res) {
 
   res.render('knowledge/index', {
     workspace,
+    active: 'chatbot',
     entries: serializeDocs(docs)
   });
 }
@@ -91,7 +92,10 @@ export async function newForm(req, res) {
     return res.redirect('/workspaces');
   }
 
-  res.render('knowledge/new', { workspace });
+  res.render('knowledge/new', {
+    workspace,
+    active: 'chatbot'
+  });
 }
 
 export async function create(req, res) {
@@ -167,6 +171,7 @@ export async function show(req, res) {
 
   res.render('knowledge/show', {
     workspace,
+    active: 'chatbot',
     entry: serializeDoc(entry),
     html: marked(entry.body)
   });
@@ -193,6 +198,7 @@ export async function editForm(req, res) {
 
   res.render('knowledge/edit', {
     workspace,
+    active: 'chatbot',
     entry: serializeDoc(entry)
   });
 }
