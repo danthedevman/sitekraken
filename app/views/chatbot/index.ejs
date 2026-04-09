@@ -1,3 +1,4 @@
+<%- include('../partials/tabLinks', { workspace, activeTab: 'files' }) %>
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="h3 mb-0">Chatbot config · <%= workspace.name %></h1>
   <a href="/workspaces/<%= workspace._id %>" class="btn btn-light">Back</a>
@@ -11,6 +12,8 @@
           method="POST"
           action="/workspaces/<%= workspace._id %>/chatbot"
           enctype="multipart/form-data"
+          id="chatbot-config-form"
+          novalidate
         >
           <div class="row g-3">
             <div class="col-md-6">
@@ -253,29 +256,56 @@
               />
             </div>
 
-            <div class="col-md-6">
-              <label class="form-label">Quick Messages (one per line)</label>
-              <textarea name="quickMessages" class="form-control" rows="8"><%= quickMessagesText %></textarea>
+            <div class="col-12">
+              <hr />
+              <h2 class="h5 mb-3">Lists</h2>
             </div>
 
-            <div class="col-md-6">
-              <label class="form-label">Footer Links (Label|Href|Target per line)</label>
-              <textarea name="footerLinks" class="form-control" rows="8"><%= footerLinksText %></textarea>
+            <div class="col-12">
+              <label class="form-label">Quick Messages</label>
+              <div id="quick-messages-list" class="d-grid gap-2 sortable-list"></div>
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-sm mt-2"
+                data-add-row="quick-message"
+              >
+                Add quick message
+              </button>
+              <input type="hidden" name="quickMessages" id="quickMessagesInput" />
               <div class="form-text">
-                Example: Docs|https://example.com/docs|_blank
+                Add, drag to reorder, edit, or remove quick messages before saving.
               </div>
             </div>
 
             <div class="col-12">
-              <label class="form-label">Allowed Domains (one per line)</label>
-              <textarea
-                name="allowedDomains"
-                class="form-control"
-                rows="5"
-                placeholder="example.com&#10;jobs.example.com"
-              ><%= allowedDomainsText %></textarea>
+              <label class="form-label">Footer Links</label>
+              <div id="footer-links-list" class="d-grid gap-2 sortable-list"></div>
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-sm mt-2"
+                data-add-row="footer-link"
+              >
+                Add footer link
+              </button>
+              <input type="hidden" name="footerLinks" id="footerLinksInput" />
               <div class="form-text">
-                Store bare hostnames only. Example: <code>example.com</code>
+                Each link has a label, URL, and target. Drag rows to reorder.
+              </div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Allowed Domains</label>
+              <div id="allowed-domains-list" class="d-grid gap-2 sortable-list"></div>
+              <button
+                type="button"
+                class="btn btn-outline-secondary btn-sm mt-2"
+                data-add-row="allowed-domain"
+              >
+                Add allowed domain
+              </button>
+              <input type="hidden" name="allowedDomains" id="allowedDomainsInput" />
+              <div class="form-text">
+                Enter any domain or origin, like <code>example.com</code>, <code>localhost:3000</code>, or <code>https://app.example.com</code>.
               </div>
             </div>
           </div>
@@ -338,3 +368,549 @@
     </div>
   </div>
 </div>
+
+<style>
+  .sortable-row {
+    cursor: grab;
+  }
+
+  .sortable-row.dragging {
+    opacity: 0.6;
+  }
+
+  .drag-handle {
+    cursor: grab;
+    user-select: none;
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+
+  .sortable-list.drag-active .sortable-row {
+    transition: transform 0.12s ease;
+  }
+
+  .validation-error {
+    display: none;
+  }
+
+  .is-invalid + .validation-error,
+  .is-invalid ~ .validation-error {
+    display: block;
+  }
+</style>
+
+<script>
+  (() => {
+    const quickMessages = <%- JSON.stringify(config.quickMessages || []) %>;
+    const footerLinks = <%- JSON.stringify(config.footerLinks || []) %>;
+    const allowedDomains = <%- JSON.stringify(workspace.allowedDomains || config.allowedDomains || []) %>;
+
+    const form = document.getElementById('chatbot-config-form');
+
+    const quickMessagesList = document.getElementById('quick-messages-list');
+    const footerLinksList = document.getElementById('footer-links-list');
+    const allowedDomainsList = document.getElementById('allowed-domains-list');
+
+    const quickMessagesInput = document.getElementById('quickMessagesInput');
+    const footerLinksInput = document.getElementById('footerLinksInput');
+    const allowedDomainsInput = document.getElementById('allowedDomainsInput');
+
+    function createButton(label, className, onClick) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = className;
+      btn.textContent = label;
+      btn.addEventListener('click', onClick);
+      return btn;
+    }
+
+    function createValidationMessage(text) {
+      const feedback = document.createElement('div');
+      feedback.className = 'invalid-feedback validation-error';
+      feedback.textContent = text;
+      return feedback;
+    }
+
+    function wrapRow(inner) {
+      const row = document.createElement('div');
+      row.className = 'border rounded p-2 bg-light sortable-row';
+      row.draggable = true;
+      row.appendChild(inner);
+      return row;
+    }
+
+    function createDragHandle() {
+      const handle = document.createElement('div');
+      handle.className = 'drag-handle text-muted px-2 d-flex align-items-center justify-content-center';
+      handle.title = 'Drag to reorder';
+      handle.setAttribute('aria-label', 'Drag to reorder');
+      handle.innerHTML = '&#x2630;';
+      return handle;
+    }
+
+    function focusFirstInput(row) {
+      const target = row.querySelector('input, select, textarea');
+      if (target) {
+        window.requestAnimationFrame(() => target.focus());
+      }
+    }
+
+    function setInvalid(input, message) {
+      input.classList.add('is-invalid');
+      if (message) {
+        const feedback = input.parentElement.querySelector('.validation-error');
+        if (feedback) feedback.textContent = message;
+      }
+    }
+
+    function clearInvalid(input) {
+      input.classList.remove('is-invalid');
+    }
+
+    function isValidUrl(value) {
+      try {
+        const url = new URL(value);
+        return ['http:', 'https:'].includes(url.protocol);
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function createQuickMessageRow(value = '') {
+      const container = document.createElement('div');
+      container.className = 'row g-2 align-items-start';
+
+      const dragCol = document.createElement('div');
+      dragCol.className = 'col-auto';
+
+      const inputCol = document.createElement('div');
+      inputCol.className = 'col';
+
+      const actionsCol = document.createElement('div');
+      actionsCol.className = 'col-auto d-flex gap-2';
+
+      const dragHandle = createDragHandle();
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'form-control quick-message-value';
+      input.placeholder = 'Enter a quick message';
+      input.value = value;
+      input.maxLength = 200;
+
+      const feedback = createValidationMessage('Quick message cannot be empty.');
+
+      input.addEventListener('input', () => {
+        clearInvalid(input);
+      });
+
+      let row;
+      const removeBtn = createButton('Remove', 'btn btn-outline-danger btn-sm', () => {
+        row.remove();
+        ensureQuickMessageRow();
+      });
+
+      dragCol.appendChild(dragHandle);
+      inputCol.appendChild(input);
+      inputCol.appendChild(feedback);
+      actionsCol.appendChild(removeBtn);
+
+      container.appendChild(dragCol);
+      container.appendChild(inputCol);
+      container.appendChild(actionsCol);
+
+      row = wrapRow(container);
+      return row;
+    }
+
+    function createFooterLinkRow(link = {}) {
+      const container = document.createElement('div');
+      container.className = 'row g-2 align-items-start';
+
+      const dragCol = document.createElement('div');
+      dragCol.className = 'col-auto';
+
+      const labelCol = document.createElement('div');
+      labelCol.className = 'col-md-3';
+
+      const hrefCol = document.createElement('div');
+      hrefCol.className = 'col-md-4';
+
+      const targetCol = document.createElement('div');
+      targetCol.className = 'col-md-3';
+
+      const actionsCol = document.createElement('div');
+      actionsCol.className = 'col-md-2 d-flex align-items-start';
+
+      const dragHandle = createDragHandle();
+
+      const labelInput = document.createElement('input');
+      labelInput.type = 'text';
+      labelInput.className = 'form-control footer-link-label';
+      labelInput.placeholder = 'Label';
+      labelInput.value = link.label || '';
+      labelInput.maxLength = 80;
+
+      const labelFeedback = createValidationMessage('Label is required.');
+
+      const hrefInput = document.createElement('input');
+      hrefInput.type = 'text';
+      hrefInput.className = 'form-control footer-link-href';
+      hrefInput.placeholder = 'https://example.com/docs';
+      hrefInput.value = link.href || '';
+
+      const hrefFeedback = createValidationMessage('Enter a valid http:// or https:// URL.');
+
+      const targetSelect = document.createElement('select');
+      targetSelect.className = 'form-select footer-link-target';
+      targetSelect.innerHTML = `
+        <option value="_self">Same tab</option>
+        <option value="_blank">New tab</option>
+      `;
+      targetSelect.value = link.target || '_blank';
+
+      labelInput.addEventListener('input', () => clearInvalid(labelInput));
+      hrefInput.addEventListener('input', () => clearInvalid(hrefInput));
+
+      let row;
+      const removeBtn = createButton('Remove', 'btn btn-outline-danger btn-sm w-100', () => {
+        row.remove();
+        ensureFooterLinkRow();
+      });
+
+      dragCol.appendChild(dragHandle);
+      labelCol.appendChild(labelInput);
+      labelCol.appendChild(labelFeedback);
+      hrefCol.appendChild(hrefInput);
+      hrefCol.appendChild(hrefFeedback);
+      targetCol.appendChild(targetSelect);
+      actionsCol.appendChild(removeBtn);
+
+      container.appendChild(dragCol);
+      container.appendChild(labelCol);
+      container.appendChild(hrefCol);
+      container.appendChild(targetCol);
+      container.appendChild(actionsCol);
+
+      row = wrapRow(container);
+      return row;
+    }
+
+    function createAllowedDomainRow(value = '') {
+      const container = document.createElement('div');
+      container.className = 'row g-2 align-items-start';
+
+      const dragCol = document.createElement('div');
+      dragCol.className = 'col-auto';
+
+      const inputCol = document.createElement('div');
+      inputCol.className = 'col';
+
+      const actionsCol = document.createElement('div');
+      actionsCol.className = 'col-auto d-flex gap-2';
+
+      const dragHandle = createDragHandle();
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'form-control allowed-domain-value';
+      input.placeholder = 'example.com or https://app.example.com';
+      input.value = value;
+      input.autocapitalize = 'off';
+      input.autocomplete = 'off';
+      input.spellcheck = false;
+
+      const feedback = createValidationMessage('Allowed domain cannot be empty.');
+
+      input.addEventListener('input', () => {
+        clearInvalid(input);
+      });
+
+      let row;
+      const removeBtn = createButton('Remove', 'btn btn-outline-danger btn-sm', () => {
+        row.remove();
+        ensureAllowedDomainRow();
+      });
+
+      dragCol.appendChild(dragHandle);
+      inputCol.appendChild(input);
+      inputCol.appendChild(feedback);
+      actionsCol.appendChild(removeBtn);
+
+      container.appendChild(dragCol);
+      container.appendChild(inputCol);
+      container.appendChild(actionsCol);
+
+      row = wrapRow(container);
+      return row;
+    }
+
+    function ensureQuickMessageRow() {
+      if (!quickMessagesList.children.length) {
+        const row = createQuickMessageRow();
+        quickMessagesList.appendChild(row);
+        focusFirstInput(row);
+      }
+    }
+
+    function ensureFooterLinkRow() {
+      if (!footerLinksList.children.length) {
+        const row = createFooterLinkRow();
+        footerLinksList.appendChild(row);
+        focusFirstInput(row);
+      }
+    }
+
+    function ensureAllowedDomainRow() {
+      if (!allowedDomainsList.children.length) {
+        const row = createAllowedDomainRow();
+        allowedDomainsList.appendChild(row);
+        focusFirstInput(row);
+      }
+    }
+
+    function addQuickMessageRow(value = '') {
+      const row = createQuickMessageRow(value);
+      quickMessagesList.appendChild(row);
+      focusFirstInput(row);
+    }
+
+    function addFooterLinkRow(link = {}) {
+      const row = createFooterLinkRow(link);
+      footerLinksList.appendChild(row);
+      focusFirstInput(row);
+    }
+
+    function addAllowedDomainRow(value = '') {
+      const row = createAllowedDomainRow(value);
+      allowedDomainsList.appendChild(row);
+      focusFirstInput(row);
+    }
+
+    function mountInitialRows() {
+      if (quickMessages.length) {
+        quickMessages.forEach((msg) => {
+          quickMessagesList.appendChild(createQuickMessageRow(msg));
+        });
+      } else {
+        quickMessagesList.appendChild(createQuickMessageRow());
+      }
+
+      if (footerLinks.length) {
+        footerLinks.forEach((link) => {
+          footerLinksList.appendChild(createFooterLinkRow(link));
+        });
+      } else {
+        footerLinksList.appendChild(createFooterLinkRow());
+      }
+
+      if (allowedDomains.length) {
+        allowedDomains.forEach((domain) => {
+          allowedDomainsList.appendChild(createAllowedDomainRow(domain));
+        });
+      } else {
+        allowedDomainsList.appendChild(createAllowedDomainRow());
+      }
+    }
+
+    function enableSortable(listEl) {
+      let draggedItem = null;
+
+      listEl.addEventListener('dragstart', (event) => {
+        const row = event.target.closest('.sortable-row');
+        if (!row) return;
+
+        draggedItem = row;
+        row.classList.add('dragging');
+        listEl.classList.add('drag-active');
+
+        if (event.dataTransfer) {
+          event.dataTransfer.effectAllowed = 'move';
+          event.dataTransfer.setData('text/plain', '');
+        }
+      });
+
+      listEl.addEventListener('dragend', () => {
+        if (draggedItem) {
+          draggedItem.classList.remove('dragging');
+        }
+        listEl.classList.remove('drag-active');
+        draggedItem = null;
+      });
+
+      listEl.addEventListener('dragover', (event) => {
+        event.preventDefault();
+
+        const afterElement = getDragAfterElement(listEl, event.clientY);
+        if (!draggedItem) return;
+
+        if (afterElement == null) {
+          listEl.appendChild(draggedItem);
+        } else if (afterElement !== draggedItem) {
+          listEl.insertBefore(draggedItem, afterElement);
+        }
+      });
+    }
+
+    function getDragAfterElement(container, y) {
+      const draggableElements = [...container.querySelectorAll('.sortable-row:not(.dragging)')];
+
+      return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+
+        if (offset < 0 && offset > closest.offset) {
+          return { offset, element: child };
+        }
+
+        return closest;
+      }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+    }
+
+    function validateQuickMessages() {
+      let isValid = true;
+      const rows = [...quickMessagesList.querySelectorAll('.sortable-row')];
+
+      rows.forEach((row) => {
+        const input = row.querySelector('.quick-message-value');
+        const value = input.value.trim();
+
+        clearInvalid(input);
+
+        if (!value) {
+          setInvalid(input, 'Quick message cannot be empty.');
+          isValid = false;
+        } else if (value.length > 200) {
+          setInvalid(input, 'Quick message must be 200 characters or fewer.');
+          isValid = false;
+        }
+      });
+
+      return isValid;
+    }
+
+    function validateFooterLinks() {
+      let isValid = true;
+      const rows = [...footerLinksList.querySelectorAll('.sortable-row')];
+
+      rows.forEach((row) => {
+        const labelInput = row.querySelector('.footer-link-label');
+        const hrefInput = row.querySelector('.footer-link-href');
+
+        const label = labelInput.value.trim();
+        const href = hrefInput.value.trim();
+
+        clearInvalid(labelInput);
+        clearInvalid(hrefInput);
+
+        const isCompletelyBlank = !label && !href;
+        if (isCompletelyBlank) {
+          return;
+        }
+
+        if (!label) {
+          setInvalid(labelInput, 'Label is required.');
+          isValid = false;
+        }
+
+        if (!href || !isValidUrl(href)) {
+          setInvalid(hrefInput, 'Enter a valid http:// or https:// URL.');
+          isValid = false;
+        }
+      });
+
+      return isValid;
+    }
+
+    function validateAllowedDomains() {
+      let isValid = true;
+      const seen = new Set();
+      const rows = [...allowedDomainsList.querySelectorAll('.sortable-row')];
+
+      rows.forEach((row) => {
+        const input = row.querySelector('.allowed-domain-value');
+        const value = input.value.trim();
+
+        clearInvalid(input);
+
+        if (!value) {
+          setInvalid(input, 'Allowed domain cannot be empty.');
+          isValid = false;
+          return;
+        }
+
+        const normalized = value.toLowerCase();
+
+        if (seen.has(normalized)) {
+          setInvalid(input, 'Duplicate domains are not allowed.');
+          isValid = false;
+          return;
+        }
+
+        seen.add(normalized);
+      });
+
+      return isValid;
+    }
+
+    function focusFirstInvalidField() {
+      const firstInvalid = form.querySelector('.is-invalid');
+      if (firstInvalid) {
+        firstInvalid.focus();
+      }
+    }
+
+    document.querySelector('[data-add-row="quick-message"]').addEventListener('click', () => {
+      addQuickMessageRow();
+    });
+
+    document.querySelector('[data-add-row="footer-link"]').addEventListener('click', () => {
+      addFooterLinkRow();
+    });
+
+    document.querySelector('[data-add-row="allowed-domain"]').addEventListener('click', () => {
+      addAllowedDomainRow();
+    });
+
+    form.addEventListener('submit', (event) => {
+      const quickValid = validateQuickMessages();
+      const footerValid = validateFooterLinks();
+      const domainsValid = validateAllowedDomains();
+
+      if (!quickValid || !footerValid || !domainsValid) {
+        event.preventDefault();
+        focusFirstInvalidField();
+        return;
+      }
+
+      const quickMessageValues = [...document.querySelectorAll('.quick-message-value')]
+        .map((el) => el.value.trim())
+        .filter(Boolean);
+
+      const footerLinkValues = [...document.querySelectorAll('#footer-links-list .sortable-row')]
+        .map((row) => {
+          const label = row.querySelector('.footer-link-label')?.value.trim() || '';
+          const href = row.querySelector('.footer-link-href')?.value.trim() || '';
+          const target = row.querySelector('.footer-link-target')?.value.trim() || '_blank';
+
+          if (!label && !href) return null;
+          return `${label}|${href}|${target}`;
+        })
+        .filter(Boolean);
+
+      const allowedDomainValues = [...document.querySelectorAll('.allowed-domain-value')]
+        .map((el) => el.value.trim())
+        .filter(Boolean);
+
+      quickMessagesInput.value = quickMessageValues.join('\n');
+      footerLinksInput.value = footerLinkValues.join('\n');
+      allowedDomainsInput.value = allowedDomainValues.join('\n');
+    });
+
+    mountInitialRows();
+
+    enableSortable(quickMessagesList);
+    enableSortable(footerLinksList);
+    enableSortable(allowedDomainsList);
+  })();
+</script>

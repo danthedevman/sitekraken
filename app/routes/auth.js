@@ -14,7 +14,7 @@ router.get(
 
 router.get(
   '/callback',
-  passport.authenticate('auth0', { failureRedirect: '/' }),
+  passport.authenticate('auth0', { failureRedirect: '/login' }),
   (req, res) => res.redirect('/workspaces')
 );
 

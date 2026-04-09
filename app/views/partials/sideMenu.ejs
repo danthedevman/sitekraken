@@ -1,0 +1,55 @@
+<aside class="app-sidebar d-none d-md-flex flex-column">
+  <div class="app-sidebar-inner">
+    <div class="sidebar-section pt-3 pb-2">
+      <div class="subheader small text-uppercase text-secondary fw-semibold">Workspace</div>
+      <a
+        href="/workspaces/<%= workspace._id %>"
+        class="nav-link app-side-link<%= active === 'overview' ? 'active' : '' %>">
+        Overview
+      </a>
+       <a
+        href="/workspaces/<%= workspace._id %>/settings"
+        class="nav-link app-side-link<%= active === 'settings' ? 'active' : '' %>">
+        Settings
+      </a>
+    </div>
+
+    <nav class="nav flex-column px-0 pb-3">
+      <hr class="border my-1"/>
+    <div class="subheader small text-uppercase text-secondary fw-semibold">Modules</div>
+      <a
+        href="/workspaces/<%= workspace._id %>/analytics"
+        class="nav-link app-side-link <%= active === 'analytics' ? 'active' : '' %>">
+        Analytics
+      </a>
+
+      <a
+        href="/workspaces/<%= workspace._id %>/announcements"
+        class="nav-link app-side-link <%= active === 'announcements' ? 'active' : '' %>">
+        Banners
+      </a>
+
+      <a
+        href="/workspaces/<%= workspace._id %>/chatbot"
+        class="nav-link app-side-link <%= active === 'chatbot' ? 'active' : '' %>">
+        Chatbot
+      </a>
+
+      <a
+        href="/workspaces/<%= workspace._id %>/feedback"
+        class="nav-link app-side-link <%= active === 'feedback' ? 'active' : '' %>">
+        Feedback
+      </a>
+      <a
+        href="/workspaces/<%= workspace._id %>/logs"
+        class="nav-link app-side-link <%= active === 'logs' ? 'active' : '' %>">
+        Logs
+      </a>
+      <a
+        href="/workspaces/<%= workspace._id %>/scripts"
+        class="nav-link app-side-link <%= active === 'scripts' ? 'active' : '' %>">
+        Scripts
+      </a>
+    </nav>
+  </div>
+</aside>
