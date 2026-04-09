@@ -1,4 +1,4 @@
-<%- include('../partials/tabLinks', { workspace, activeTab: 'files' }) %>
+<%- include('../partials/chatbotTabLinks', { workspace, activeTab: 'files' }) %>
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="h3 mb-0">Files · <%= workspace.name %></h1>
   <a href="/workspaces/<%= workspace._id %>/chatbot" class="btn btn-light">Back</a>
@@ -6,46 +6,173 @@
 
 <div class="card mb-4">
   <div class="card-body">
-    <form action="/workspaces/<%= workspace._id %>/chatbot/files" method="POST" enctype="multipart/form-data">
-      <div class="mb-3">
-        <label class="form-label">Upload file</label>
-        <input type="file" name="file" class="form-control" required />
-      </div>
-      <button class="btn btn-primary">Upload to OpenAI</button>
+    <h2 class="h5">Upload file</h2>
+    <p class="text-muted mb-3">Drag and drop a file here, or <button id="file-picker-link" type="button" class="btn btn-link p-0 align-baseline">click to upload</button>.</p>
+
+    <form id="file-upload-form" action="/workspaces/<%= workspace._id %>/chatbot/files" method="POST" enctype="multipart/form-data" class="d-none">
+      <input id="file-input" type="file" name="file" />
     </form>
+
+    <div
+      id="file-drop-zone"
+      class="border rounded p-4 text-center bg-light"
+      style="border-style: dashed !important; cursor: pointer;"
+      role="button"
+      tabindex="0"
+      aria-label="Upload file area"
+    >
+      <div class="fw-semibold">Drop file to upload</div>
+      <small class="text-muted">Maximum file size is 25 MB.</small>
+    </div>
+
+    <div id="upload-progress-wrapper" class="mt-3 d-none" aria-live="polite">
+      <div class="d-flex justify-content-between">
+        <span id="upload-progress-label">Uploading…</span>
+        <span id="upload-progress-text">0%</span>
+      </div>
+      <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="upload-progress-aria">
+        <div id="upload-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+      </div>
+    </div>
   </div>
 </div>
 
 <div class="card">
   <div class="card-body">
     <h2 class="h5">Uploaded files</h2>
-    <div class="table-responsive">
-      <table class="table align-middle">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Size</th>
-            <th>OpenAI File ID</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <% files.forEach(file => { %>
+    <% if (!files.length) { %>
+      <p class="text-muted mb-0">No files uploaded yet.</p>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead>
             <tr>
-              <td><%= file.originalName %></td>
-              <td><%= file.mimeType %></td>
-              <td><%= file.size %></td>
-              <td><code><%= file.openaiFileId %></code></td>
-              <td>
-                <form action="/workspaces/<%= workspace._id %>/chatbot/files/<%= file._id %>?_method=DELETE" method="POST">
-                  <button class="btn btn-sm btn-outline-danger">Delete</button>
-                </form>
-              </td>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Size</th>
+              <th>OpenAI File ID</th>
+              <th>R2 Key</th>
+              <th></th>
             </tr>
-          <% }) %>
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            <% files.forEach(file => { %>
+              <tr>
+                <td><%= file.originalName %></td>
+                <td><%= file.mimeType %></td>
+                <td><%= file.size %></td>
+                <td><code><%= file.openaiFileId %></code></td>
+                <td><code><%= file.r2Key || '-' %></code></td>
+                <td>
+                  <form
+                    action="/workspaces/<%= workspace._id %>/chatbot/files/<%= file._id %>?_method=DELETE"
+                    method="POST"
+                    onsubmit="return confirm('Delete this file from vector store, OpenAI, and R2?');"
+                  >
+                    <button class="btn btn-sm btn-outline-danger">Delete</button>
+                  </form>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
   </div>
 </div>
+
+<script>
+  (() => {
+    const fileInput = document.getElementById('file-input');
+    const pickerLink = document.getElementById('file-picker-link');
+    const dropZone = document.getElementById('file-drop-zone');
+    const uploadUrl = '/workspaces/<%= workspace._id %>/chatbot/files';
+
+    const progressWrapper = document.getElementById('upload-progress-wrapper');
+    const progressBar = document.getElementById('upload-progress-bar');
+    const progressText = document.getElementById('upload-progress-text');
+    const progressAria = document.getElementById('upload-progress-aria');
+    const progressLabel = document.getElementById('upload-progress-label');
+
+    function setUploadProgress(percent, label = 'Uploading…') {
+      const safePercent = Math.max(0, Math.min(100, Number(percent) || 0));
+      progressWrapper.classList.remove('d-none');
+      progressBar.style.width = `${safePercent}%`;
+      progressText.textContent = `${Math.round(safePercent)}%`;
+      progressLabel.textContent = label;
+      progressAria.setAttribute('aria-valuenow', String(Math.round(safePercent)));
+    }
+
+    function uploadFile(file) {
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', uploadUrl, true);
+      xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+      xhr.responseType = 'json';
+
+      setUploadProgress(0);
+
+      xhr.upload.addEventListener('progress', (event) => {
+        if (!event.lengthComputable) return;
+        const percent = (event.loaded / event.total) * 100;
+        setUploadProgress(percent);
+      });
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          setUploadProgress(100, 'Upload complete');
+          const redirectUrl = xhr.response?.redirectUrl || uploadUrl;
+          window.location.assign(`${redirectUrl}?uploaded=${Date.now()}`);
+          return;
+        }
+
+        const errorMessage = xhr.response?.error || 'Upload failed.';
+        setUploadProgress(0, 'Upload failed');
+        alert(errorMessage);
+      });
+
+      xhr.addEventListener('error', () => {
+        setUploadProgress(0, 'Upload failed');
+        alert('Upload failed due to a network error.');
+      });
+
+      xhr.send(formData);
+    }
+
+    pickerLink.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files?.[0];
+      uploadFile(file);
+      fileInput.value = '';
+    });
+
+    dropZone.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      dropZone.classList.add('border-primary');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('border-primary');
+    });
+
+    dropZone.addEventListener('drop', (event) => {
+      event.preventDefault();
+      dropZone.classList.remove('border-primary');
+      const file = event.dataTransfer?.files?.[0];
+      uploadFile(file);
+    });
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        fileInput.click();
+      }
+    });
+  })();
+</script>
