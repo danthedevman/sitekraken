@@ -37,5 +37,13 @@
   tableId: 'interactions-table',
   defaultPageSize: 20,
   columns,
-  rows
+  rows,
+  serverPagination: {
+    page: tableState.page,
+    pageSize: tableState.pageSize,
+    totalRows: tableState.totalRows,
+    totalPages: tableState.totalPages,
+    search: tableState.search,
+    queryParamPrefix: ''
+  }
 }) %>

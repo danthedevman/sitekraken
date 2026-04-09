@@ -1,16 +1,58 @@
 <%
   const widgetId = tableId || `table-widget-${Math.random().toString(36).slice(2, 9)}`;
   const rowsPerPage = Number(defaultPageSize || 20);
+  const server = serverPagination || null;
+  const hasServerPagination = Boolean(server);
+  const serverPage = Number(server?.page || 1);
+  const serverTotalPages = Number(server?.totalPages || 1);
+  const serverTotalRows = Number(server?.totalRows || 0);
+  const serverSearch = String(server?.search || '');
+  const serverPageSize = Number(server?.pageSize || rowsPerPage);
+  const queryParamPrefix = String(server?.queryParamPrefix || '');
+  const pageKey = `${queryParamPrefix}page`;
+  const searchKey = `${queryParamPrefix}search`;
+  const pageSizeKey = `${queryParamPrefix}pageSize`;
+
+  const queryForPage = (nextPage) => {
+    const params = new URLSearchParams();
+
+    if (serverSearch) params.set(searchKey, serverSearch);
+    params.set(pageSizeKey, String(serverPageSize));
+    params.set(pageKey, String(nextPage));
+
+    return params.toString();
+  };
 %>
 <div class="card">
   <div class="card-body">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-      <div class="input-group" style="max-width: 360px;">
-        <span class="input-group-text"><i class="bi bi-search"></i></span>
-        <input type="search" class="form-control" data-table-search placeholder="Search rows" aria-label="Search table" />
+    <% if (hasServerPagination) { %>
+      <form method="get" class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div class="input-group" style="max-width: 360px;">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="search" name="<%= searchKey %>" value="<%= serverSearch %>" class="form-control" placeholder="Search rows" aria-label="Search table" />
+          <div class="input-group-append">
+            <button type="submit" class="btn btn-primary">Search</button>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <input type="hidden" name="<%= pageSizeKey %>" value="<%= serverPageSize %>" />
+          <input type="hidden" name="<%= pageKey %>" value="1" />
+          <% if (serverSearch) { %>
+            <a href="?" class="btn btn-outline-secondary btn-sm">Clear</a>
+          <% } %>
+          <small class="text-muted"><%= serverTotalRows %> result(s)</small>
+        </div>
+      </form>
+    <% } else { %>
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div class="input-group" style="max-width: 360px;">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="search" class="form-control" data-table-search placeholder="Search rows" aria-label="Search table" />
+        </div>
+        <small class="text-muted"><span data-table-summary>0</span> result(s)</small>
       </div>
-      <small class="text-muted"><span data-table-summary>0</span> result(s)</small>
-    </div>
+    <% } %>
 
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0" id="<%= widgetId %>" data-table-widget data-page-size="<%= rowsPerPage %>">
@@ -19,14 +61,14 @@
             <% columns.forEach((column) => { %>
               <th
                 scope="col"
-                <% if (column.sortable !== false) { %>
+                <% if (!hasServerPagination && column.sortable !== false) { %>
                   role="button"
                   data-sort-key="<%= column.key %>"
                   data-sort-type="<%= column.sortType || 'string' %>"
                 <% } %>
               >
                 <span><%= column.label %></span>
-                <% if (column.sortable !== false) { %><span class="ms-1 text-muted" data-sort-indicator="<%= column.key %>">↕</span><% } %>
+                <% if (!hasServerPagination && column.sortable !== false) { %><span class="ms-1 text-muted" data-sort-indicator="<%= column.key %>">↕</span><% } %>
               </th>
             <% }) %>
           </tr>
@@ -54,122 +96,163 @@
 
     <div class="d-flex justify-content-end mt-3">
       <nav aria-label="Table pages">
-        <ul class="pagination pagination-sm mb-0" data-table-pagination></ul>
+        <% if (hasServerPagination) { %>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item<%= serverPage <= 1 ? ' disabled' : '' %>">
+              <a class="page-link" href="?<%= queryForPage(Math.max(1, serverPage - 1)) %>" aria-label="Previous">Prev</a>
+            </li>
+            <% for (let i = 1; i <= serverTotalPages; i += 1) { %>
+              <li class="page-item<%= i === serverPage ? ' active' : '' %>">
+                <a class="page-link" href="?<%= queryForPage(i) %>"><%= i %></a>
+              </li>
+            <% } %>
+            <li class="page-item<%= serverPage >= serverTotalPages ? ' disabled' : '' %>">
+              <a class="page-link" href="?<%= queryForPage(Math.min(serverTotalPages, serverPage + 1)) %>" aria-label="Next">Next</a>
+            </li>
+          </ul>
+        <% } else { %>
+          <ul class="pagination pagination-sm mb-0" data-table-pagination></ul>
+        <% } %>
       </nav>
     </div>
   </div>
 </div>
 
-<script>
-  (function bootstrapTableWidget() {
-    if (window.__bootstrapTableWidgetLoaded) return;
-    window.__bootstrapTableWidgetLoaded = true;
+<% if (!hasServerPagination) { %>
+  <script>
+    (function bootstrapTableWidget() {
+      if (window.__bootstrapTableWidgetLoaded) return;
+      window.__bootstrapTableWidgetLoaded = true;
 
-    function normalize(value) {
-      return String(value || '').toLowerCase();
-    }
-
-    function getValue(row, key) {
-      return row.getAttribute(`data-value-${key}`) || row.cells?.[0]?.textContent || '';
-    }
-
-    function compare(a, b, type) {
-      if (type === 'number') {
-        return Number(a) - Number(b);
+      function normalize(value) {
+        return String(value || '').toLowerCase();
       }
-      if (type === 'date') {
-        return new Date(a).getTime() - new Date(b).getTime();
+
+      function getValue(row, key) {
+        return row.getAttribute(`data-value-${key}`) || row.cells?.[0]?.textContent || '';
       }
-      return String(a).localeCompare(String(b), undefined, { sensitivity: 'base' });
-    }
 
-    function initTable(table) {
-      const container = table.closest('.card-body');
-      const searchInput = container.querySelector('[data-table-search]');
-      const summaryEl = container.querySelector('[data-table-summary]');
-      const paginationEl = container.querySelector('[data-table-pagination]');
-      const pageSize = Number(table.dataset.pageSize || 20);
-      const bodyRows = Array.from(table.querySelectorAll('tbody tr'));
-      let sortKey = null;
-      let sortDirection = 1;
-      let page = 1;
-
-      function apply() {
-        let rows = bodyRows.filter((row) => normalize(row.textContent).includes(normalize(searchInput.value)));
-
-        if (sortKey) {
-          const sortHeader = table.querySelector(`[data-sort-key="${sortKey}"]`);
-          const sortType = sortHeader?.dataset.sortType || 'string';
-          rows = rows.slice().sort((a, b) => {
-            const valueA = getValue(a, sortKey);
-            const valueB = getValue(b, sortKey);
-            return compare(valueA, valueB, sortType) * sortDirection;
-          });
+      function compare(a, b, type) {
+        if (type === 'number') {
+          return Number(a) - Number(b);
         }
-
-        bodyRows.forEach((row) => row.remove());
-        const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
-        if (page > totalPages) page = totalPages;
-        const start = (page - 1) * pageSize;
-        const paged = rows.slice(start, start + pageSize);
-        const tbody = table.querySelector('tbody');
-        paged.forEach((row) => tbody.appendChild(row));
-
-        summaryEl.textContent = rows.length;
-        renderPagination(totalPages);
+        if (type === 'date') {
+          return new Date(a).getTime() - new Date(b).getTime();
+        }
+        return String(a).localeCompare(String(b), undefined, { sensitivity: 'base' });
       }
 
-      function renderPagination(totalPages) {
-        paginationEl.innerHTML = '';
-        const addItem = (label, nextPage, disabled, active) => {
-          const li = document.createElement('li');
-          li.className = `page-item${disabled ? ' disabled' : ''}${active ? ' active' : ''}`;
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.className = 'page-link';
-          button.textContent = label;
-          if (!disabled) {
-            button.addEventListener('click', () => {
-              page = nextPage;
-              apply();
+      function initTable(table) {
+        const container = table.closest('.card-body');
+        const searchInput = container.querySelector('[data-table-search]');
+        const summaryEl = container.querySelector('[data-table-summary]');
+        const paginationEl = container.querySelector('[data-table-pagination]');
+        const pageSize = Number(table.dataset.pageSize || 20);
+        const bodyRows = Array.from(table.querySelectorAll('tbody tr'));
+        let sortKey = null;
+        let sortDirection = 1;
+        let page = 1;
+
+        function apply() {
+          let rows = bodyRows.filter((row) => normalize(row.textContent).includes(normalize(searchInput.value)));
+
+          if (sortKey) {
+            const sortHeader = table.querySelector(`[data-sort-key="${sortKey}"]`);
+            const sortType = sortHeader?.dataset.sortType || 'string';
+            rows = rows.slice().sort((a, b) => {
+              const valueA = getValue(a, sortKey);
+              const valueB = getValue(b, sortKey);
+              return compare(valueA, valueB, sortType) * sortDirection;
             });
           }
-          li.appendChild(button);
-          paginationEl.appendChild(li);
-        };
 
-        addItem('Prev', Math.max(1, page - 1), page === 1, false);
-        for (let i = 1; i <= totalPages; i += 1) {
-          addItem(String(i), i, false, i === page);
+          bodyRows.forEach((row) => row.remove());
+          const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+          if (page > totalPages) page = totalPages;
+          const start = (page - 1) * pageSize;
+          const paged = rows.slice(start, start + pageSize);
+          const tbody = table.querySelector('tbody');
+          paged.forEach((row) => tbody.appendChild(row));
+
+          summaryEl.textContent = rows.length;
+          renderPagination(totalPages);
         }
-        addItem('Next', Math.min(totalPages, page + 1), page === totalPages, false);
-      }
 
-      searchInput.addEventListener('input', () => {
-        page = 1;
-        apply();
-      });
+        function renderPagination(totalPages) {
+          paginationEl.innerHTML = '';
+          const addItem = (label, nextPage, disabled, active) => {
+            const li = document.createElement('li');
+            li.className = `page-item${disabled ? ' disabled' : ''}${active ? ' active' : ''}`;
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'page-link';
+            button.textContent = label;
+            if (!disabled) {
+              button.addEventListener('click', () => {
+                page = nextPage;
+                apply();
+              });
+            }
+            li.appendChild(button);
+            paginationEl.appendChild(li);
+          };
 
-      table.querySelectorAll('[data-sort-key]').forEach((header) => {
-        header.addEventListener('click', () => {
-          const key = header.dataset.sortKey;
-          if (sortKey === key) {
-            sortDirection *= -1;
-          } else {
-            sortKey = key;
-            sortDirection = 1;
+          addItem('Prev', Math.max(1, page - 1), page === 1, false);
+          for (let i = 1; i <= totalPages; i += 1) {
+            addItem(String(i), i, false, i === page);
           }
+          addItem('Next', Math.min(totalPages, page + 1), page === totalPages, false);
+        }
 
-          table.querySelectorAll('[data-sort-indicator]').forEach((el) => {
-            el.textContent = '↕';
-          });
-          const indicator = table.querySelector(`[data-sort-indicator="${key}"]`);
-          if (indicator) indicator.textContent = sortDirection === 1 ? '↑' : '↓';
+        searchInput.addEventListener('input', () => {
+          page = 1;
           apply();
         });
-      });
 
-      table.querySelectorAll('tbody tr[data-row-href]').forEach((row) => {
+        table.querySelectorAll('[data-sort-key]').forEach((header) => {
+          header.addEventListener('click', () => {
+            const key = header.dataset.sortKey;
+            if (sortKey === key) {
+              sortDirection *= -1;
+            } else {
+              sortKey = key;
+              sortDirection = 1;
+            }
+
+            table.querySelectorAll('[data-sort-indicator]').forEach((el) => {
+              el.textContent = '↕';
+            });
+            const indicator = table.querySelector(`[data-sort-indicator="${key}"]`);
+            if (indicator) indicator.textContent = sortDirection === 1 ? '↑' : '↓';
+            apply();
+          });
+        });
+
+        table.querySelectorAll('tbody tr[data-row-href]').forEach((row) => {
+          const openRowHref = () => {
+            const href = row.dataset.rowHref;
+            if (href) window.location.assign(href);
+          };
+
+          row.addEventListener('click', openRowHref);
+          row.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              openRowHref();
+            }
+          });
+        });
+
+        apply();
+      }
+
+      document.querySelectorAll('table[data-table-widget]').forEach(initTable);
+    })();
+  </script>
+<% } else { %>
+  <script>
+    (function bindTableRowLinks() {
+      document.querySelectorAll('#<%= widgetId %> tbody tr[data-row-href]').forEach((row) => {
         const openRowHref = () => {
           const href = row.dataset.rowHref;
           if (href) window.location.assign(href);
@@ -183,10 +266,6 @@
           }
         });
       });
-
-      apply();
-    }
-
-    document.querySelectorAll('table[data-table-widget]').forEach(initTable);
-  })();
-</script>
+    })();
+  </script>
+<% } %>

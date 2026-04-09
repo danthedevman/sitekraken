@@ -119,6 +119,16 @@ function sanitizeThreadId(value) {
   return raw.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 120);
 }
 
+function parsePositiveInt(value, fallback) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
+  return parsed;
+}
+
+function escapeRegExp(value) {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function formatDateTime(value) {
   if (!value) return '';
 
@@ -225,11 +235,35 @@ export async function interactions(req, res) {
   const threads = db.collection('chat_threads');
   const messages = db.collection('chat_messages');
   const workspaceId = String(workspace._id);
+  const pageSize = parsePositiveInt(req.query.pageSize, 20);
+  const page = parsePositiveInt(req.query.page, 1);
+  const search = String(req.query.search || '').trim();
+
+  const query = { workspaceId };
+
+  if (search) {
+    const escapedSearch = escapeRegExp(search);
+    const searchRegex = new RegExp(escapedSearch, 'i');
+
+    query.$or = [
+      { threadId: { $regex: searchRegex } },
+      { source: { $regex: searchRegex } },
+      { pageTitle: { $regex: searchRegex } },
+      { pageUrl: { $regex: searchRegex } },
+      { siteName: { $regex: searchRegex } }
+    ];
+  }
+
+  const totalRows = await threads.countDocuments(query);
+  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const skip = (currentPage - 1) * pageSize;
 
   const latestThreads = await threads
-    .find({ workspaceId })
+    .find(query)
     .sort({ updatedAt: -1, createdAt: -1 })
-    .limit(1000)
+    .skip(skip)
+    .limit(pageSize)
     .toArray();
 
   const threadIds = latestThreads
@@ -270,7 +304,14 @@ export async function interactions(req, res) {
   res.render('chatbot/interactions', {
     workspace: serializeDoc(workspace),
     active: 'chatbot',
-    interactions: interactionRows
+    interactions: interactionRows,
+    tableState: {
+      search,
+      page: currentPage,
+      pageSize,
+      totalRows,
+      totalPages
+    }
   });
 }
 
