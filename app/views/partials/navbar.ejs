@@ -4,7 +4,7 @@
   const containerClass = isWorkspacesIndex || hasWorkspaceContext ? 'container-fluid px-4' : 'container';
 %>
 
-<nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom<%= hasWorkspaceContext ? ' with-sidebar' : '' %>">
+<nav class="navbar navbar-expand-lg bg-body-tertiary<%= hasWorkspaceContext ? ' with-sidebar' : '' %>">
   <div class="<%= containerClass %> d-flex align-items-center w-100 gap-3">
     <% if (!hasWorkspaceContext) { %>
       <a class="navbar-brand fw-bold" href="/">SiteKraken</a>
@@ -18,10 +18,40 @@
           <% } %>
         </ul>
       <% } else { %>
-        <div></div>
+        <div class="dropdown">
+          <button
+            class="btn btn-outline-secondary btn-sm dropdown-toggle"
+            type="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            title="<%= workspace.name %>">
+            <span class="d-inline-block text-truncate" style="max-width: 220px;"><%= workspace.name %></span>
+          </button>
+          <ul class="dropdown-menu shadow-sm">
+            <% const recent = Array.isArray(recentWorkspaces) ? recentWorkspaces.slice(0, 5) : []; %>
+            <% if (recent.length > 0) { %>
+              <% recent.forEach((item) => { %>
+                <li>
+                  <a
+                    class="dropdown-item <%= String(item.id) === String(workspace._id) ? 'active' : '' %>"
+                    href="/workspaces/<%= item.id %>"
+                    title="<%= item.name %>">
+                    <span class="d-block text-truncate"><%= item.name %></span>
+                  </a>
+                </li>
+              <% }) %>
+            <% } else { %>
+              <li><span class="dropdown-item-text text-muted">No recent workspaces</span></li>
+            <% } %>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+              <a class="dropdown-item fw-semibold" href="/workspaces">View all</a>
+            </li>
+          </ul>
+        </div>
       <% } %>
 
-      <div class="d-flex gap-2">
+      <div class="d-flex gap-2 align-items-center">
         <% if (currentUser) { %>
           <% if (hasWorkspaceContext) { %>
             <button
@@ -29,30 +59,32 @@
               class="btn btn-outline-secondary btn-sm"
               data-bs-toggle="modal"
               data-bs-target="#embedScriptModal"
+              aria-label="Open script tag modal"
+              title="Embeddable script tag"
             >
-              Script
+              <i class="bi bi-code-slash"></i>
             </button>
+          <% } else { %>
+            <div class="dropdown">
+              <button
+                class="btn btn-outline-primary btn-sm dropdown-toggle"
+                type="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                Profile
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="/auth/profile">Profile settings</a></li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <form action="/auth/logout" method="POST">
+                    <button class="dropdown-item text-danger">Logout</button>
+                  </form>
+                </li>
+              </ul>
+            </div>
           <% } %>
-
-          <div class="dropdown">
-            <button
-              class="btn btn-outline-primary btn-sm dropdown-toggle"
-              type="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-            >
-              Profile
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end">
-              <li><a class="dropdown-item" href="/auth/profile">View profile</a></li>
-              <li><hr class="dropdown-divider" /></li>
-              <li>
-                <form action="/auth/logout" method="POST">
-                  <button class="dropdown-item text-danger">Logout</button>
-                </form>
-              </li>
-            </ul>
-          </div>
         <% } else { %>
           <a href="/auth/login" class="btn btn-primary btn-sm">Login with Auth0</a>
         <% } %>

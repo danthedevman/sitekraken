@@ -24,6 +24,10 @@ pre {
   --main-bg: #f8f9fa;
 }
 
+[data-bs-theme='dark'] {
+  --main-bg: #101217;
+}
+
 body {
   background-color: var(--main-bg);
 }
@@ -47,13 +51,17 @@ body {
   width: var(--sidebar-width);
   background: var(--sidebar-bg);
   border-right: 1px solid var(--sidebar-border);
-  overflow-y: auto;
+  overflow: hidden;
   z-index: 1020;
   transition: width 0.2s ease;
 }
 
 .app-sidebar-inner {
   min-height: 100%;
+}
+
+.app-sidebar-body {
+  min-height: 0;
 }
 
 .app-side-link {
@@ -102,6 +110,25 @@ body {
   border-color: var(--sidebar-border) !important;
 }
 
+.app-profile-menu-toggle {
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--sidebar-border);
+  color: #fff;
+  border-radius: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.app-profile-menu-toggle:hover,
+.app-profile-menu-toggle:focus,
+.app-profile-menu-toggle:active {
+  background-color: rgba(255, 255, 255, 0.14) !important;
+  color: #fff !important;
+  border-color: var(--sidebar-border) !important;
+}
+
 .app-workspace-dropdown-toggle::after {
   float: right;
   margin-top: 0.6rem;
@@ -132,6 +159,10 @@ body {
 
 .sidebar-header {
   border-bottom: 1px solid var(--sidebar-border);
+}
+
+.sidebar-profile {
+  border-color: var(--sidebar-border) !important;
 }
 
 .sidebar-logo {
@@ -181,6 +212,10 @@ body.sidebar-collapsed .sidebar-expand-icon {
 }
 
 body.sidebar-collapsed .app-workspace-dropdown-toggle {
+  justify-content: center;
+}
+
+body.sidebar-collapsed .app-profile-menu-toggle {
   justify-content: center;
 }
 
