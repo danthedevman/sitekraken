@@ -38,7 +38,7 @@
 </div>
 
 <script>
-  (() => {
+  window.addEventListener('load', () => {
     const form = document.getElementById('knowledge-edit-form');
     const bodyInput = document.getElementById('knowledge-body');
     const toolbarOptions = [
@@ -101,5 +101,5 @@
     form.addEventListener('submit', () => {
       bodyInput.value = quill.root.innerHTML;
     });
-  })();
+  });
 </script>
