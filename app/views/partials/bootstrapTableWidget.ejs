@@ -8,17 +8,25 @@
   const serverTotalRows = Number(server?.totalRows || 0);
   const serverSearch = String(server?.search || '');
   const serverPageSize = Number(server?.pageSize || rowsPerPage);
+  const serverSort = String(server?.sort || '').trim();
+  const serverDirection = String(server?.direction || 'asc').toLowerCase() === 'desc' ? 'desc' : 'asc';
   const queryParamPrefix = String(server?.queryParamPrefix || '');
   const pageKey = `${queryParamPrefix}page`;
   const searchKey = `${queryParamPrefix}search`;
   const pageSizeKey = `${queryParamPrefix}pageSize`;
+  const sortKey = `${queryParamPrefix}sort`;
+  const directionKey = `${queryParamPrefix}direction`;
 
-  const queryForPage = (nextPage) => {
+  const queryForPage = (nextPage, sort = serverSort, direction = serverDirection) => {
     const params = new URLSearchParams();
 
     if (serverSearch) params.set(searchKey, serverSearch);
     params.set(pageSizeKey, String(serverPageSize));
     params.set(pageKey, String(nextPage));
+    if (sort) {
+      params.set(sortKey, sort);
+      params.set(directionKey, direction);
+    }
 
     return params.toString();
   };
@@ -30,6 +38,10 @@
         <div class="input-group" style="max-width: 360px;">
           <span class="input-group-text"><i class="bi bi-search"></i></span>
           <input type="search" name="<%= searchKey %>" value="<%= serverSearch %>" class="form-control" placeholder="Search rows" aria-label="Search table" />
+          <% if (serverSort) { %>
+            <input type="hidden" name="<%= sortKey %>" value="<%= serverSort %>" />
+            <input type="hidden" name="<%= directionKey %>" value="<%= serverDirection %>" />
+          <% } %>
           <div class="input-group-append">
             <button type="submit" class="btn btn-primary">Search</button>
           </div>
@@ -61,14 +73,34 @@
             <% columns.forEach((column) => { %>
               <th
                 scope="col"
-                <% if (!hasServerPagination && column.sortable !== false) { %>
+                <% if (column.sortable !== false) { %>
+                  <% if (hasServerPagination) { %>
+                    class="p-0"
+                  <% } else { %>
                   role="button"
                   data-sort-key="<%= column.key %>"
                   data-sort-type="<%= column.sortType || 'string' %>"
+                  <% } %>
                 <% } %>
               >
-                <span><%= column.label %></span>
-                <% if (!hasServerPagination && column.sortable !== false) { %><span class="ms-1 text-muted" data-sort-indicator="<%= column.key %>">↕</span><% } %>
+                <% if (hasServerPagination && column.sortable !== false) { %>
+                  <a
+                    class="d-flex align-items-center justify-content-between gap-1 text-decoration-none text-reset px-2 py-1"
+                    href="?<%= queryForPage(1, column.key, serverSort === column.key && serverDirection === 'asc' ? 'desc' : 'asc') %>"
+                  >
+                    <span><%= column.label %></span>
+                    <span class="ms-1 text-muted">
+                      <% if (serverSort === column.key) { %>
+                        <%= serverDirection === 'asc' ? '↑' : '↓' %>
+                      <% } else { %>
+                        ↕
+                      <% } %>
+                    </span>
+                  </a>
+                <% } else { %>
+                  <span><%= column.label %></span>
+                  <% if (!hasServerPagination && column.sortable !== false) { %><span class="ms-1 text-muted" data-sort-indicator="<%= column.key %>">↕</span><% } %>
+                <% } %>
               </th>
             <% }) %>
           </tr>

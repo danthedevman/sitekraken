@@ -197,6 +197,17 @@ export async function interactions(req, res) {
   const pageSize = parsePositiveInt(req.query.pageSize, 20);
   const page = parsePositiveInt(req.query.page, 1);
   const search = String(req.query.search || '').trim();
+  const sort = String(req.query.sort || 'updatedAt').trim();
+  const direction = String(req.query.direction || 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
+  const sortDirection = direction === 'asc' ? 1 : -1;
+  const sortConfig = {
+    threadId: { threadId: sortDirection },
+    source: { source: sortDirection },
+    pageTitle: { pageTitle: sortDirection, pageUrl: sortDirection },
+    updatedAt: { updatedAt: sortDirection, createdAt: sortDirection },
+    messageCount: { messageCount: sortDirection, updatedAt: -1 }
+  };
+  const sortKey = Object.prototype.hasOwnProperty.call(sortConfig, sort) ? sort : 'updatedAt';
 
   const query = { workspaceId };
 
@@ -218,29 +229,69 @@ export async function interactions(req, res) {
   const currentPage = Math.min(page, totalPages);
   const skip = (currentPage - 1) * pageSize;
 
-  const latestThreads = await threads
-    .find(query)
-    .sort({ updatedAt: -1, createdAt: -1 })
-    .skip(skip)
-    .limit(pageSize)
-    .toArray();
-
-  const threadIds = latestThreads
-    .map((thread) => String(thread.threadId || ''))
-    .filter(Boolean);
+  let latestThreads = [];
   const counts = new Map();
 
-  if (threadIds.length) {
-    const grouped = await messages
+  if (sortKey === 'messageCount') {
+    latestThreads = await threads
       .aggregate([
-        { $match: { workspaceId, threadId: { $in: threadIds } } },
-        { $group: { _id: '$threadId', count: { $sum: 1 } } }
+        { $match: query },
+        {
+          $lookup: {
+            from: 'chat_messages',
+            let: { threadId: '$threadId', workspaceId: '$workspaceId' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $eq: ['$threadId', '$$threadId'] },
+                      { $eq: ['$workspaceId', '$$workspaceId'] }
+                    ]
+                  }
+                }
+              },
+              { $count: 'count' }
+            ],
+            as: 'messageStats'
+          }
+        },
+        {
+          $addFields: {
+            messageCount: {
+              $ifNull: [{ $arrayElemAt: ['$messageStats.count', 0] }, 0]
+            }
+          }
+        },
+        { $sort: sortConfig[sortKey] },
+        { $skip: skip },
+        { $limit: pageSize }
       ])
       .toArray();
+  } else {
+    latestThreads = await threads
+      .find(query)
+      .sort(sortConfig[sortKey])
+      .skip(skip)
+      .limit(pageSize)
+      .toArray();
 
-    grouped.forEach((item) => {
-      counts.set(String(item._id), Number(item.count || 0));
-    });
+    const threadIds = latestThreads
+      .map((thread) => String(thread.threadId || ''))
+      .filter(Boolean);
+
+    if (threadIds.length) {
+      const grouped = await messages
+        .aggregate([
+          { $match: { workspaceId, threadId: { $in: threadIds } } },
+          { $group: { _id: '$threadId', count: { $sum: 1 } } }
+        ])
+        .toArray();
+
+      grouped.forEach((item) => {
+        counts.set(String(item._id), Number(item.count || 0));
+      });
+    }
   }
 
   const interactionRows = latestThreads.map((thread) => {
@@ -253,7 +304,7 @@ export async function interactions(req, res) {
       siteName: String(thread.siteName || ''),
       pageTitle: String(thread.pageTitle || ''),
       pageUrl: String(thread.pageUrl || ''),
-      messageCount: counts.get(threadId) || 0,
+      messageCount: Number(thread.messageCount ?? counts.get(threadId) ?? 0),
       updatedAtLabel: formatDateTime(updatedAt),
       updatedAtIso: updatedAt ? new Date(updatedAt).toISOString() : '',
       interactionHref: `/workspaces/${workspaceId}/chatbot/interactions/${encodeURIComponent(threadId)}`
@@ -266,6 +317,8 @@ export async function interactions(req, res) {
     interactions: interactionRows,
     tableState: {
       search,
+      sort: sortKey,
+      direction,
       page: currentPage,
       pageSize,
       totalRows,
