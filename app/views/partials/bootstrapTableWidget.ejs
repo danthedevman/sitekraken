@@ -16,6 +16,16 @@
   const pageSizeKey = `${queryParamPrefix}pageSize`;
   const sortKey = `${queryParamPrefix}sort`;
   const directionKey = `${queryParamPrefix}direction`;
+  const enableSelection = Boolean(selectableRows || bulkActions?.delete);
+  const selectionKey = String(selectionValueKey || 'id');
+  const rowSelectionValue = (row) => {
+    const candidate = row?.values?.[selectionKey] ?? row?.id ?? row?.href ?? '';
+    return String(candidate);
+  };
+  const bulkDelete = bulkActions?.delete || null;
+  const bulkDeleteMethod = String(bulkDelete?.method || 'POST').toUpperCase();
+  const bulkDeleteInputName = String(bulkDelete?.inputName || 'ids');
+  const bulkDeleteConfirmMessage = String(bulkDelete?.confirmMessage || 'Delete selected rows? This action cannot be undone.');
 
   const queryForPage = (nextPage, sort = serverSort, direction = serverDirection) => {
     const params = new URLSearchParams();
@@ -66,10 +76,36 @@
       </div>
     <% } %>
 
+    <% if (bulkDelete?.action) { %>
+      <form
+        method="<%= bulkDeleteMethod === 'GET' ? 'GET' : 'POST' %>"
+        action="<%= bulkDelete.action %>"
+        data-table-bulk-delete-form
+        data-confirm-message="<%= bulkDeleteConfirmMessage.replace(/"/g, '&quot;') %>"
+        class="d-flex justify-content-between align-items-center gap-2 mb-3 d-none"
+      >
+        <div class="small text-muted">
+          <span data-selected-count>0</span> row(s) selected
+        </div>
+        <div>
+          <% if (bulkDeleteMethod !== 'POST' && bulkDeleteMethod !== 'GET') { %>
+            <input type="hidden" name="_method" value="<%= bulkDeleteMethod %>" />
+          <% } %>
+          <div data-selected-inputs></div>
+          <button type="submit" class="btn btn-sm btn-danger">Delete selected</button>
+        </div>
+      </form>
+    <% } %>
+
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0" id="<%= widgetId %>" data-table-widget data-page-size="<%= rowsPerPage %>">
         <thead>
           <tr>
+            <% if (enableSelection) { %>
+              <th scope="col" style="width: 40px;">
+                <input type="checkbox" class="form-check-input" aria-label="Select all rows" data-select-all />
+              </th>
+            <% } %>
             <% columns.forEach((column) => { %>
               <th
                 scope="col"
@@ -117,6 +153,17 @@
                 data-value-<%= key %>="<%= String(value ?? '').replace(/"/g, '&quot;') %>"
               <% }) %>
             >
+              <% if (enableSelection) { %>
+                <td>
+                  <input
+                    type="checkbox"
+                    class="form-check-input"
+                    aria-label="Select row"
+                    data-row-select
+                    value="<%= rowSelectionValue(row).replace(/"/g, '&quot;') %>"
+                  />
+                </td>
+              <% } %>
               <% columns.forEach((column) => { %>
                 <td><%- row.cells?.[column.key] ?? '' %></td>
               <% }) %>
@@ -181,9 +228,56 @@
         const paginationEl = container.querySelector('[data-table-pagination]');
         const pageSize = Number(table.dataset.pageSize || 20);
         const bodyRows = Array.from(table.querySelectorAll('tbody tr'));
+        const selectAllCheckbox = container.querySelector('[data-select-all]');
+        const bulkDeleteForm = container.querySelector('[data-table-bulk-delete-form]');
+        const selectedCountEl = container.querySelector('[data-selected-count]');
+        const selectedInputsEl = container.querySelector('[data-selected-inputs]');
         let sortKey = null;
         let sortDirection = 1;
         let page = 1;
+        const selectedValues = new Set();
+
+        function updateSelectionUI() {
+          const visibleCheckboxes = Array.from(table.querySelectorAll('tbody [data-row-select]'));
+          const checkedVisible = visibleCheckboxes.filter((checkbox) => checkbox.checked);
+          const hasVisible = visibleCheckboxes.length > 0;
+          if (selectAllCheckbox) {
+            selectAllCheckbox.checked = hasVisible && checkedVisible.length === visibleCheckboxes.length;
+            selectAllCheckbox.indeterminate = checkedVisible.length > 0 && checkedVisible.length < visibleCheckboxes.length;
+          }
+
+          if (bulkDeleteForm) {
+            if (selectedCountEl) selectedCountEl.textContent = String(selectedValues.size);
+            if (selectedInputsEl) {
+              selectedInputsEl.innerHTML = '';
+              selectedValues.forEach((value) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = '<%= bulkDeleteInputName %>';
+                input.value = value;
+                selectedInputsEl.appendChild(input);
+              });
+            }
+            bulkDeleteForm.classList.toggle('d-none', selectedValues.size === 0);
+          }
+        }
+
+        function bindRowSelectionEvents(row) {
+          const checkbox = row.querySelector('[data-row-select]');
+          if (!checkbox) return;
+          checkbox.checked = selectedValues.has(checkbox.value);
+          checkbox.addEventListener('click', (event) => {
+            event.stopPropagation();
+          });
+          checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
+              selectedValues.add(checkbox.value);
+            } else {
+              selectedValues.delete(checkbox.value);
+            }
+            updateSelectionUI();
+          });
+        }
 
         function apply() {
           let rows = bodyRows.filter((row) => normalize(row.textContent).includes(normalize(searchInput.value)));
@@ -204,10 +298,15 @@
           const start = (page - 1) * pageSize;
           const paged = rows.slice(start, start + pageSize);
           const tbody = table.querySelector('tbody');
-          paged.forEach((row) => tbody.appendChild(row));
+          paged.forEach((row) => {
+            const checkbox = row.querySelector('[data-row-select]');
+            if (checkbox) checkbox.checked = selectedValues.has(checkbox.value);
+            tbody.appendChild(row);
+          });
 
           summaryEl.textContent = rows.length;
           renderPagination(totalPages);
+          updateSelectionUI();
         }
 
         function renderPagination(totalPages) {
@@ -260,6 +359,35 @@
           });
         });
 
+        table.querySelectorAll('tbody tr').forEach(bindRowSelectionEvents);
+        if (selectAllCheckbox) {
+          selectAllCheckbox.addEventListener('click', (event) => event.stopPropagation());
+          selectAllCheckbox.addEventListener('change', () => {
+            table.querySelectorAll('tbody [data-row-select]').forEach((checkbox) => {
+              checkbox.checked = selectAllCheckbox.checked;
+              if (checkbox.checked) {
+                selectedValues.add(checkbox.value);
+              } else {
+                selectedValues.delete(checkbox.value);
+              }
+            });
+            updateSelectionUI();
+          });
+        }
+
+        if (bulkDeleteForm) {
+          bulkDeleteForm.addEventListener('submit', (event) => {
+            if (selectedValues.size === 0) {
+              event.preventDefault();
+              return;
+            }
+
+            const customMessage = bulkDeleteForm.dataset.confirmMessage || 'Delete selected rows?';
+            const confirmed = window.confirm(`${customMessage} (${selectedValues.size} selected)`);
+            if (!confirmed) event.preventDefault();
+          });
+        }
+
         table.querySelectorAll('tbody tr[data-row-href]').forEach((row) => {
           const openRowHref = () => {
             const href = row.dataset.rowHref;
@@ -284,6 +412,71 @@
 <% } else { %>
   <script>
     (function bindTableRowLinks() {
+      const table = document.querySelector('#<%= widgetId %>');
+      if (!table) return;
+      const container = table.closest('.card-body');
+      const selectAllCheckbox = container?.querySelector('[data-select-all]');
+      const bulkDeleteForm = container?.querySelector('[data-table-bulk-delete-form]');
+      const selectedCountEl = container?.querySelector('[data-selected-count]');
+      const selectedInputsEl = container?.querySelector('[data-selected-inputs]');
+      const selectedValues = new Set();
+
+      function updateSelectionUI() {
+        const rowCheckboxes = Array.from(table.querySelectorAll('tbody [data-row-select]'));
+        const checkedRows = rowCheckboxes.filter((checkbox) => checkbox.checked);
+        if (selectAllCheckbox) {
+          selectAllCheckbox.checked = rowCheckboxes.length > 0 && checkedRows.length === rowCheckboxes.length;
+          selectAllCheckbox.indeterminate = checkedRows.length > 0 && checkedRows.length < rowCheckboxes.length;
+        }
+
+        if (bulkDeleteForm) {
+          if (selectedCountEl) selectedCountEl.textContent = String(selectedValues.size);
+          if (selectedInputsEl) {
+            selectedInputsEl.innerHTML = '';
+            selectedValues.forEach((value) => {
+              const input = document.createElement('input');
+              input.type = 'hidden';
+              input.name = '<%= bulkDeleteInputName %>';
+              input.value = value;
+              selectedInputsEl.appendChild(input);
+            });
+          }
+          bulkDeleteForm.classList.toggle('d-none', selectedValues.size === 0);
+        }
+      }
+
+      table.querySelectorAll('tbody [data-row-select]').forEach((checkbox) => {
+        checkbox.addEventListener('click', (event) => event.stopPropagation());
+        checkbox.addEventListener('change', () => {
+          if (checkbox.checked) selectedValues.add(checkbox.value);
+          else selectedValues.delete(checkbox.value);
+          updateSelectionUI();
+        });
+      });
+
+      if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', () => {
+          table.querySelectorAll('tbody [data-row-select]').forEach((checkbox) => {
+            checkbox.checked = selectAllCheckbox.checked;
+            if (checkbox.checked) selectedValues.add(checkbox.value);
+            else selectedValues.delete(checkbox.value);
+          });
+          updateSelectionUI();
+        });
+      }
+
+      if (bulkDeleteForm) {
+        bulkDeleteForm.addEventListener('submit', (event) => {
+          if (selectedValues.size === 0) {
+            event.preventDefault();
+            return;
+          }
+          const customMessage = bulkDeleteForm.dataset.confirmMessage || 'Delete selected rows?';
+          const confirmed = window.confirm(`${customMessage} (${selectedValues.size} selected)`);
+          if (!confirmed) event.preventDefault();
+        });
+      }
+
       document.querySelectorAll('#<%= widgetId %> tbody tr[data-row-href]').forEach((row) => {
         const openRowHref = () => {
           const href = row.dataset.rowHref;
@@ -298,6 +491,8 @@
           }
         });
       });
+
+      updateSelectionUI();
     })();
   </script>
 <% } %>
