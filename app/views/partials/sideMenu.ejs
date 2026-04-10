@@ -1,5 +1,5 @@
 <aside class="app-sidebar d-none d-md-flex flex-column" id="workspace-sidebar">
-  <div class="app-sidebar-inner">
+  <div class="app-sidebar-inner d-flex flex-column h-100">
     <div class="sidebar-header d-flex align-items-center justify-content-between px-2 pt-3 pb-2">
       <a class="sidebar-logo d-flex align-items-center gap-2 text-decoration-none" href="/workspaces">
         <span class="sidebar-logo-mark"><i class="bi bi-hurricane"></i></span>
@@ -16,72 +16,68 @@
       </button>
     </div>
 
-    <div class="sidebar-section pb-2">
-      <div class="subheader small text-uppercase text-secondary fw-semibold">Workspaces</div>
-      <div class="px-2 mb-1">
-        <div class="dropdown">
+    <div class="app-sidebar-body flex-grow-1 overflow-auto">
+      <div class="sidebar-section pb-2">
+        <div class="subheader small text-uppercase text-secondary fw-semibold">Workspace</div>
+        <a href="/workspaces/<%= workspace._id %>" class="nav-link app-side-link<%= active === 'overview' ? ' active' : '' %>">
+          <i class="bi bi-grid-1x2 app-side-link-icon"></i><span class="app-side-link-text">Overview</span>
+        </a>
+        <a href="/workspaces/<%= workspace._id %>/settings" class="nav-link app-side-link<%= active === 'settings' ? ' active' : '' %>">
+          <i class="bi bi-sliders app-side-link-icon"></i><span class="app-side-link-text">Settings</span>
+        </a>
+      </div>
+
+      <nav class="nav flex-column px-0 pb-3">
+        <hr class="border my-1"/>
+        <div class="subheader small text-uppercase text-secondary fw-semibold">Modules</div>
+        <a href="/workspaces/<%= workspace._id %>/analytics" class="nav-link app-side-link<%= active === 'analytics' ? ' active' : '' %>">
+          <i class="bi bi-graph-up-arrow app-side-link-icon"></i><span class="app-side-link-text">Analytics</span>
+        </a>
+        <a href="/workspaces/<%= workspace._id %>/announcements" class="nav-link app-side-link<%= active === 'announcements' ? ' active' : '' %>">
+          <i class="bi bi-megaphone app-side-link-icon"></i><span class="app-side-link-text">Banners</span>
+        </a>
+        <a href="/workspaces/<%= workspace._id %>/chatbot" class="nav-link app-side-link<%= active === 'chatbot' ? ' active' : '' %>">
+          <i class="bi bi-robot app-side-link-icon"></i><span class="app-side-link-text">Chatbot</span>
+        </a>
+        <a href="/workspaces/<%= workspace._id %>/feedback" class="nav-link app-side-link<%= active === 'feedback' ? ' active' : '' %>">
+          <i class="bi bi-chat-square-dots app-side-link-icon"></i><span class="app-side-link-text">Feedback</span>
+        </a>
+        <a href="/workspaces/<%= workspace._id %>/logs" class="nav-link app-side-link<%= active === 'logs' ? ' active' : '' %>">
+          <i class="bi bi-journal-text app-side-link-icon"></i><span class="app-side-link-text">Logs</span>
+        </a>
+        <a href="/workspaces/<%= workspace._id %>/scripts" class="nav-link app-side-link<%= active === 'scripts' ? ' active' : '' %>">
+          <i class="bi bi-code-slash app-side-link-icon"></i><span class="app-side-link-text">Scripts</span>
+        </a>
+      </nav>
+    </div>
+
+    <% if (currentUser) { %>
+      <div class="sidebar-profile mt-auto px-2 py-2 border-top">
+        <div class="dropdown w-100">
           <button
-            class="btn app-workspace-dropdown-toggle w-100 text-start"
+            class="btn app-profile-menu-toggle w-100 text-start"
             type="button"
             data-bs-toggle="dropdown"
             aria-expanded="false"
-            title="<%= workspace.name %>">
-            <span class="d-block text-truncate sidebar-link-text"><%= workspace.name %></span>
-            <span class="bi bi-chevron-down sidebar-expand-icon"></span>
+            title="<%= currentUser.displayName || currentUser.email || 'Profile' %>">
+            <span class="d-flex align-items-center gap-2">
+              <i class="bi bi-person-circle app-side-link-icon"></i>
+              <span class="d-block text-truncate app-side-link-text"><%= currentUser.displayName || currentUser.email %></span>
+            </span>
+            <span class="bi bi-chevron-up sidebar-expand-icon"></span>
           </button>
-          <ul class="dropdown-menu w-100 shadow-sm">
-            <% const recent = Array.isArray(recentWorkspaces) ? recentWorkspaces.slice(0, 5) : []; %>
-            <% if (recent.length > 0) { %>
-              <% recent.forEach((item) => { %>
-                <li>
-                  <a
-                    class="dropdown-item <%= String(item.id) === String(workspace._id) ? 'active' : '' %>"
-                    href="/workspaces/<%= item.id %>"
-                    title="<%= item.name %>">
-                    <span class="d-block text-truncate"><%= item.name %></span>
-                  </a>
-                </li>
-              <% }) %>
-            <% } else { %>
-              <li><span class="dropdown-item-text text-muted">No recent workspaces</span></li>
-            <% } %>
-            <li><hr class="dropdown-divider"></li>
+          <ul class="dropdown-menu w-100 shadow-sm mb-2">
+            <li><a class="dropdown-item" href="/auth/profile">Profile settings</a></li>
+            <li><hr class="dropdown-divider" /></li>
             <li>
-              <a class="dropdown-item fw-semibold" href="/workspaces">View all</a>
+              <form action="/auth/logout" method="POST">
+                <button class="dropdown-item text-danger">Logout</button>
+              </form>
             </li>
           </ul>
         </div>
       </div>
-      <a href="/workspaces/<%= workspace._id %>" class="nav-link app-side-link<%= active === 'overview' ? ' active' : '' %>">
-        <i class="bi bi-grid-1x2 app-side-link-icon"></i><span class="app-side-link-text">Overview</span>
-      </a>
-      <a href="/workspaces/<%= workspace._id %>/settings" class="nav-link app-side-link<%= active === 'settings' ? ' active' : '' %>">
-        <i class="bi bi-sliders app-side-link-icon"></i><span class="app-side-link-text">Settings</span>
-      </a>
-    </div>
-
-    <nav class="nav flex-column px-0 pb-3">
-      <hr class="border my-1"/>
-      <div class="subheader small text-uppercase text-secondary fw-semibold">Modules</div>
-      <a href="/workspaces/<%= workspace._id %>/analytics" class="nav-link app-side-link<%= active === 'analytics' ? ' active' : '' %>">
-        <i class="bi bi-graph-up-arrow app-side-link-icon"></i><span class="app-side-link-text">Analytics</span>
-      </a>
-      <a href="/workspaces/<%= workspace._id %>/announcements" class="nav-link app-side-link<%= active === 'announcements' ? ' active' : '' %>">
-        <i class="bi bi-megaphone app-side-link-icon"></i><span class="app-side-link-text">Banners</span>
-      </a>
-      <a href="/workspaces/<%= workspace._id %>/chatbot" class="nav-link app-side-link<%= active === 'chatbot' ? ' active' : '' %>">
-        <i class="bi bi-robot app-side-link-icon"></i><span class="app-side-link-text">Chatbot</span>
-      </a>
-      <a href="/workspaces/<%= workspace._id %>/feedback" class="nav-link app-side-link<%= active === 'feedback' ? ' active' : '' %>">
-        <i class="bi bi-chat-square-dots app-side-link-icon"></i><span class="app-side-link-text">Feedback</span>
-      </a>
-      <a href="/workspaces/<%= workspace._id %>/logs" class="nav-link app-side-link<%= active === 'logs' ? ' active' : '' %>">
-        <i class="bi bi-journal-text app-side-link-icon"></i><span class="app-side-link-text">Logs</span>
-      </a>
-      <a href="/workspaces/<%= workspace._id %>/scripts" class="nav-link app-side-link<%= active === 'scripts' ? ' active' : '' %>">
-        <i class="bi bi-code-slash app-side-link-icon"></i><span class="app-side-link-text">Scripts</span>
-      </a>
-    </nav>
+    <% } %>
   </div>
 </aside>
 

@@ -4,7 +4,38 @@
     <p><strong>Name:</strong> <%= currentUser.displayName %></p>
     <p><strong>Email:</strong> <%= currentUser.email %></p>
     <% if (currentUser.avatar) { %>
-      <img src="<%= currentUser.avatar %>" alt="avatar" class="rounded" width="72" />
+      <img src="<%= currentUser.avatar %>" alt="avatar" class="rounded mb-3" width="72" />
     <% } %>
+
+    <hr />
+
+    <h3 class="h6 mb-2">Profile settings</h3>
+    <p class="text-muted small mb-2">Theme</p>
+    <div class="form-check">
+      <input class="form-check-input profile-theme-radio" type="radio" name="themeMode" id="theme-light" value="light">
+      <label class="form-check-label" for="theme-light">Light mode</label>
+    </div>
+    <div class="form-check">
+      <input class="form-check-input profile-theme-radio" type="radio" name="themeMode" id="theme-dark" value="dark">
+      <label class="form-check-label" for="theme-dark">Dark mode</label>
+    </div>
   </div>
 </div>
+
+<script>
+  (function () {
+    const storageKey = 'sitekraken.theme';
+    const radios = Array.from(document.querySelectorAll('.profile-theme-radio'));
+    if (!radios.length) return;
+
+    const currentTheme = localStorage.getItem(storageKey) || 'light';
+    radios.forEach((radio) => {
+      radio.checked = radio.value === currentTheme;
+      radio.addEventListener('change', (event) => {
+        const nextTheme = event.target.value;
+        localStorage.setItem(storageKey, nextTheme);
+        document.documentElement.setAttribute('data-bs-theme', nextTheme);
+      });
+    });
+  })();
+</script>
