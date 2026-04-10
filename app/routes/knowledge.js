@@ -5,6 +5,7 @@ import {
   index,
   newForm,
   create,
+  bulkDestroy,
   show,
   editForm,
   update,
@@ -25,6 +26,7 @@ router.get('/', ensureAuth, index);
 router.get('/new', ensureAuth, newForm);
 router.post('/uploads/image', ensureAuth, imageUpload.single('image'), uploadKnowledgeImage);
 router.post('/', ensureAuth, create);
+router.post('/bulk-delete', ensureAuth, bulkDestroy);
 router.get('/:knowledgeId', ensureAuth, show);
 router.get('/:knowledgeId/edit', ensureAuth, editForm);
 router.put('/:knowledgeId', ensureAuth, update);

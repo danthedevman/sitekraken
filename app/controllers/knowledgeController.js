@@ -1,3 +1,5 @@
+import { ObjectId } from 'mongodb';
+
 import { getCollections } from '../config/db.js';
 import {
   buildKnowledgeHtmlDocument,
@@ -29,6 +31,15 @@ function buildChatbotTabLinks(workspaceId) {
     { key: 'knowledge', label: 'Knowledge', href: `/workspaces/${workspaceId}/chatbot/knowledge` },
     { key: 'interactions', label: 'Interactions', href: `/workspaces/${workspaceId}/chatbot/interactions` }
   ];
+}
+
+function normalizeKnowledgeIds(value) {
+  const ids = Array.isArray(value) ? value : [value];
+  return [...new Set(
+    ids
+      .map((id) => String(id || '').trim())
+      .filter((id) => id && ObjectId.isValid(id))
+  )];
 }
 
 async function cleanupKnowledgeAssets(workspace, entry) {
@@ -401,4 +412,49 @@ export async function destroy(req, res) {
 
   req.flash('success', 'Knowledge deleted');
   res.redirect(`/workspaces/${workspace._id}/chatbot/knowledge`);
+}
+
+export async function bulkDestroy(req, res) {
+  const { knowledgeEntries } = getCollections();
+  const workspace = await getWorkspace(req);
+
+  if (!workspace) {
+    req.flash('error', 'Workspace not found');
+    return res.redirect('/workspaces');
+  }
+
+  const knowledgeIds = normalizeKnowledgeIds(req.body.ids);
+
+  if (!knowledgeIds.length) {
+    req.flash('error', 'No knowledge entries selected');
+    return res.redirect(`/workspaces/${workspace._id}/chatbot/knowledge`);
+  }
+
+  const entryObjectIds = knowledgeIds.map((id) => toObjectId(id));
+  const entries = await knowledgeEntries
+    .find({
+      _id: { $in: entryObjectIds },
+      workspaceId: workspace._id
+    })
+    .toArray();
+
+  if (!entries.length) {
+    req.flash('error', 'No valid knowledge entries found');
+    return res.redirect(`/workspaces/${workspace._id}/chatbot/knowledge`);
+  }
+
+  for (const entry of entries) {
+    await cleanupKnowledgeAssets(workspace, entry);
+  }
+
+  await knowledgeEntries.deleteMany({
+    _id: { $in: entries.map((entry) => entry._id) },
+    workspaceId: workspace._id
+  });
+
+  req.flash(
+    'success',
+    `Deleted ${entries.length} knowledge ${entries.length === 1 ? 'entry' : 'entries'}`
+  );
+  return res.redirect(`/workspaces/${workspace._id}/chatbot/knowledge`);
 }
