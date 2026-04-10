@@ -2,16 +2,29 @@
   const routeTabs = (() => {
     if (!workspace?._id) return [];
 
+    const routeTabMap = {
+      analytics: [
+        { key: 'analytics', label: 'Dashboard', href: `/workspaces/${workspace._id}/analytics` }
+      ],
+      chatbot: [
+        { key: 'chatbot', label: 'Configuration', href: `/workspaces/${workspace._id}/chatbot` },
+        { key: 'files', label: 'Files', href: `/workspaces/${workspace._id}/chatbot/files` },
+        { key: 'knowledge', label: 'Knowledge', href: `/workspaces/${workspace._id}/chatbot/knowledge` },
+        { key: 'interactions', label: 'Interactions', href: `/workspaces/${workspace._id}/chatbot/interactions` }
+      ]
+    };
+
+    const chatbotTabs = routeTabMap.chatbot;
+
     if (activeTab === 'analytics') {
-      return [{ key: 'analytics', label: 'Interactions', href: `/workspaces/${workspace._id}/analytics/dashboard` }];
+      return routeTabMap.analytics;
     }
 
-    return [
-      { key: 'chatbot', label: 'Configuration', href: `/workspaces/${workspace._id}/chatbot` },
-      { key: 'files', label: 'Files', href: `/workspaces/${workspace._id}/chatbot/files` },
-      { key: 'knowledge', label: 'Knowledge', href: `/workspaces/${workspace._id}/chatbot/knowledge` },
-      { key: 'interactions', label: 'Interactions', href: `/workspaces/${workspace._id}/chatbot/interactions` }
-    ];
+    if (chatbotTabs.some((tab) => tab.key === activeTab)) {
+      return chatbotTabs;
+    }
+
+    return [];
   })();
 %>
 
