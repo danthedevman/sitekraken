@@ -1,0 +1,54 @@
+<%- include('../partials/tabLinks', { workspace, activeTab: 'logs' }) %>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">Logs · <%= workspace.name %></h1>
+  <form method="POST" action="/workspaces/<%= workspace._id %>/logs/toggle-enabled" class="m-0">
+    <input type="hidden" name="enabled" value="<%= workspace.logs?.enabled ? 'false' : 'true' %>" />
+    <button class="btn btn-sm <%= workspace.logs?.enabled ? 'btn-outline-danger' : 'btn-success' %>">
+      <%= workspace.logs?.enabled ? 'Inactivate logs' : 'Activate logs' %>
+    </button>
+  </form>
+</div>
+
+<%
+  const columns = [
+    { key: 'createdAt', label: 'When', sortType: 'date' },
+    { key: 'level', label: 'Level' },
+    { key: 'type', label: 'Type' },
+    { key: 'message', label: 'Message' },
+    { key: 'userSession', label: 'User session' }
+  ];
+
+  const rows = logs.map((log) => ({
+    href: `/workspaces/${workspace._id}/logs/${log.id}`,
+    values: {
+      createdAt: log.createdAtIso,
+      level: log.level,
+      type: log.type,
+      message: log.message,
+      userSession: log.userSession
+    },
+    cells: {
+      createdAt: log.createdAtLabel,
+      level: `<span class="badge text-bg-${log.level === 'error' || log.level === 'fatal' ? 'danger' : log.level === 'warn' ? 'warning' : 'secondary'}">${log.level}</span>`,
+      type: `<code>${log.type}</code>`,
+      message: `<div class="text-truncate" style="max-width: 520px;" title="${log.message.replaceAll('"', '&quot;')}">${log.message || '-'}</div>`,
+      userSession: log.userSession ? `<code>${log.userSession}</code>` : '<span class="text-muted">—</span>'
+    }
+  }));
+%>
+
+<%- include('../partials/bootstrapTableWidget', {
+  tableId: 'workspace-logs-table',
+  columns,
+  rows,
+  defaultPageSize: tableState.pageSize,
+  serverPagination: {
+    page: tableState.page,
+    totalPages: tableState.totalPages,
+    totalRows: tableState.totalRows,
+    search: tableState.search,
+    pageSize: tableState.pageSize,
+    sort: tableState.sort,
+    direction: tableState.direction
+  }
+}) %>

@@ -17,7 +17,7 @@ async function getWorkspace(req) {
 
   const hydratedWorkspace = ensureWorkspaceChatbotDefaults(workspace);
 
-  if (!workspace.analytics || !workspace.chatbot || !workspace.apiKey) {
+  if (!workspace.analytics || !workspace.logs || !workspace.chatbot || !workspace.apiKey) {
     await workspaces.updateOne(
       { _id: new ObjectId(workspace._id) },
       {
@@ -25,6 +25,7 @@ async function getWorkspace(req) {
           apiKey: hydratedWorkspace.apiKey,
           chatbot: hydratedWorkspace.chatbot,
           analytics: hydratedWorkspace.analytics,
+          logs: hydratedWorkspace.logs,
           allowedDomains: hydratedWorkspace.allowedDomains,
           updatedAt: new Date(),
         },

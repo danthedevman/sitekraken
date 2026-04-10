@@ -1,0 +1,29 @@
+<%- include('../partials/tabLinks', { workspace, activeTab: 'logs' }) %>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h3 mb-1">Log entry</h1>
+    <div class="text-muted small"><%= log.createdAtLabel %></div>
+  </div>
+  <a href="/workspaces/<%= workspace._id %>/logs" class="btn btn-outline-secondary btn-sm">Back to logs</a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <dl class="row mb-0">
+      <dt class="col-sm-3">Level</dt><dd class="col-sm-9"><code><%= log.level %></code></dd>
+      <dt class="col-sm-3">Type</dt><dd class="col-sm-9"><code><%= log.type %></code></dd>
+      <dt class="col-sm-3">Message</dt><dd class="col-sm-9"><pre class="mb-0" style="white-space: pre-wrap;"><%= log.message %></pre></dd>
+      <dt class="col-sm-3">Stack</dt><dd class="col-sm-9"><pre class="mb-0" style="white-space: pre-wrap;"><%= log.stack || '—' %></pre></dd>
+      <dt class="col-sm-3">Page URL</dt><dd class="col-sm-9 text-break"><%= log.pageUrl || '—' %></dd>
+      <dt class="col-sm-3">Pathname</dt><dd class="col-sm-9"><%= log.pathname || '—' %></dd>
+      <dt class="col-sm-3">Title</dt><dd class="col-sm-9"><%= log.title || '—' %></dd>
+      <dt class="col-sm-3">Referrer</dt><dd class="col-sm-9 text-break"><%= log.referrer || '—' %></dd>
+      <dt class="col-sm-3">Source</dt><dd class="col-sm-9"><%= log.source || '—' %></dd>
+      <dt class="col-sm-3">User session</dt><dd class="col-sm-9"><code><%= log.userSession || '—' %></code></dd>
+      <dt class="col-sm-3">Session ID</dt><dd class="col-sm-9"><code><%= log.sessionId || '—' %></code></dd>
+      <dt class="col-sm-3">Visitor ID</dt><dd class="col-sm-9"><code><%= log.visitorId || '—' %></code></dd>
+      <dt class="col-sm-3">Metadata</dt><dd class="col-sm-9"><pre class="mb-0" style="white-space: pre-wrap;"><%= log.metadataJson %></pre></dd>
+    </dl>
+  </div>
+</div>

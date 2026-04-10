@@ -4,7 +4,8 @@
 
     const routeTabMap = {
       analytics: [
-        { key: 'analytics', label: 'Dashboard', href: `/workspaces/${workspace._id}/analytics` }
+        { key: 'analytics', label: 'Dashboard', href: `/workspaces/${workspace._id}/analytics` },
+        { key: 'logs', label: 'Logs', href: `/workspaces/${workspace._id}/logs` }
       ],
       chatbot: [
         { key: 'chatbot', label: 'Configuration', href: `/workspaces/${workspace._id}/chatbot` },
@@ -16,7 +17,7 @@
 
     const chatbotTabs = routeTabMap.chatbot;
 
-    if (activeTab === 'analytics') {
+    if (activeTab === 'analytics' || activeTab === 'logs') {
       return routeTabMap.analytics;
     }
 

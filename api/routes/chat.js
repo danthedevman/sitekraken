@@ -432,7 +432,8 @@ export default async function chatRoutes(fastify) {
             source: body.source || "website",
             pageUrl: body.pageUrl || null,
             pageTitle: body.pageTitle || null,
-            siteName: body.siteName || null
+            siteName: body.siteName || null,
+            userSession: body.userSession || null
           });
         } else {
           await threads.updateOne(
@@ -445,7 +446,8 @@ export default async function chatRoutes(fastify) {
                 updatedAt: now,
                 pageUrl: body.pageUrl || existingThread.pageUrl || null,
                 pageTitle: body.pageTitle || existingThread.pageTitle || null,
-                siteName: body.siteName || existingThread.siteName || null
+                siteName: body.siteName || existingThread.siteName || null,
+                userSession: body.userSession || existingThread.userSession || null
               }
             }
           );
@@ -460,7 +462,8 @@ export default async function chatRoutes(fastify) {
             createdAt: now,
             source: body.source || "website",
             pageUrl: body.pageUrl || null,
-            pageTitle: body.pageTitle || null
+            pageTitle: body.pageTitle || null,
+            userSession: body.userSession || null
           },
           {
             workspaceId: String(workspace._id),
@@ -470,7 +473,8 @@ export default async function chatRoutes(fastify) {
             createdAt: now,
             openaiResponseId: null,
             rawOutput: [],
-            rewrittenFrom: null
+            rewrittenFrom: null,
+            userSession: body.userSession || null
           }
         ]);
 
@@ -547,7 +551,8 @@ export default async function chatRoutes(fastify) {
           source: body.source || "website",
           pageUrl: body.pageUrl || null,
           pageTitle: body.pageTitle || null,
-          siteName: body.siteName || null
+          siteName: body.siteName || null,
+          userSession: body.userSession || null
         });
       } else {
         await threads.updateOne(
@@ -561,7 +566,8 @@ export default async function chatRoutes(fastify) {
               updatedAt: now,
               pageUrl: body.pageUrl || existingThread.pageUrl || null,
               pageTitle: body.pageTitle || existingThread.pageTitle || null,
-              siteName: body.siteName || existingThread.siteName || null
+              siteName: body.siteName || existingThread.siteName || null,
+              userSession: body.userSession || existingThread.userSession || null
             }
           }
         );
@@ -576,7 +582,8 @@ export default async function chatRoutes(fastify) {
           createdAt: now,
           source: body.source || "website",
           pageUrl: body.pageUrl || null,
-          pageTitle: body.pageTitle || null
+          pageTitle: body.pageTitle || null,
+          userSession: body.userSession || null
         },
         {
           workspaceId: String(workspace._id),
@@ -586,7 +593,8 @@ export default async function chatRoutes(fastify) {
           createdAt: now,
           openaiResponseId: response.id,
           rawOutput: response.output || [],
-          rewrittenFrom: firstPassReply
+          rewrittenFrom: firstPassReply,
+          userSession: body.userSession || null
         }
       ]);
 

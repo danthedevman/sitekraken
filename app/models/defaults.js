@@ -141,10 +141,42 @@ export function defaultAnalyticsConfig(overrides = {}) {
   };
 }
 
+
+export function defaultLogsConfig(overrides = {}) {
+  const overrideConfig =
+    overrides && typeof overrides.config === "object" ? overrides.config : {};
+
+  return {
+    name: overrides.name || "logs",
+    enabled: typeof overrides.enabled === "boolean" ? overrides.enabled : true,
+    scriptUrl:
+      overrides.scriptUrl || "https://api.sitekraken.com/public/lib/logs.js",
+    module: typeof overrides.module === "boolean" ? overrides.module : false,
+    config: {
+      captureConsoleErrors:
+        typeof overrideConfig.captureConsoleErrors === "boolean"
+          ? overrideConfig.captureConsoleErrors
+          : true,
+      flushEveryMs:
+        typeof overrideConfig.flushEveryMs === "number"
+          ? overrideConfig.flushEveryMs
+          : 4000,
+      allowedDomains: Array.isArray(overrideConfig.allowedDomains)
+        ? overrideConfig.allowedDomains
+        : Array.isArray(overrides.allowedDomains)
+          ? overrides.allowedDomains
+          : [],
+    }
+  };
+}
+
 export function defaultWorkspaceChatbot(workspaceId = null, overrides = {}) {
   const defaults = defaultChatbotConfig(workspaceId, overrides);
 
   const analytics = defaultAnalyticsConfig({
+    allowedDomains: defaults.allowedDomains,
+  });
+  const logs = defaultLogsConfig({
     allowedDomains: defaults.allowedDomains,
   });
 
@@ -159,6 +191,7 @@ export function defaultWorkspaceChatbot(workspaceId = null, overrides = {}) {
       config: defaults.config,
     },
     analytics,
+    logs,
   };
 }
 
@@ -184,6 +217,15 @@ export function ensureWorkspaceChatbotDefaults(workspace = {}) {
     module: workspace?.analytics?.module,
     allowedDomains: workspaceAllowedDomains,
     config: workspace?.analytics?.config || {},
+  });
+
+  const logsDefaults = defaultLogsConfig({
+    name: workspace?.logs?.name,
+    enabled: workspace?.logs?.enabled,
+    scriptUrl: workspace?.logs?.scriptUrl,
+    module: workspace?.logs?.module,
+    allowedDomains: workspaceAllowedDomains,
+    config: workspace?.logs?.config || {},
   });
 
   const existingConfig =
@@ -270,6 +312,29 @@ export function ensureWorkspaceChatbotDefaults(workspace = {}) {
             : workspaceAllowedDomains.length > 0
               ? workspaceAllowedDomains
               : analyticsDefaults.config.allowedDomains,
+      },
+    },
+    logs: {
+      ...(workspace?.logs || {}),
+      name: workspace?.logs?.name || logsDefaults.name,
+      enabled:
+        typeof workspace?.logs?.enabled === "boolean"
+          ? workspace.logs.enabled
+          : logsDefaults.enabled,
+      scriptUrl: workspace?.logs?.scriptUrl || logsDefaults.scriptUrl,
+      module:
+        typeof workspace?.logs?.module === "boolean"
+          ? workspace.logs.module
+          : logsDefaults.module,
+      config: {
+        ...logsDefaults.config,
+        ...(workspace?.logs?.config || {}),
+        allowedDomains:
+          Array.isArray(workspace?.logs?.config?.allowedDomains)
+            ? workspace.logs.config.allowedDomains
+            : workspaceAllowedDomains.length > 0
+              ? workspaceAllowedDomains
+              : logsDefaults.config.allowedDomains,
       },
     },
   };

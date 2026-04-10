@@ -148,6 +148,8 @@ export async function create(req, res) {
     apiKey: chatbotDefaults.apiKey,
     allowedDomains: chatbotDefaults.allowedDomains,
     chatbot: chatbotDefaults.chatbot,
+    analytics: chatbotDefaults.analytics,
+    logs: chatbotDefaults.logs,
     createdAt: new Date(),
     updatedAt: new Date()
   };
