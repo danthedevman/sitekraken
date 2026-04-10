@@ -12,9 +12,10 @@ pre {
 }
 
 :root {
-  --navbar-height: 56px;
+  --navbar-height: 48px;
   --sidebar-width: 260px;
-  --sidebar-width-collapsed: 84px;
+  --navbar-bg: #fff;
+  --sidebar-width-collapsed: 56px;
   --sidebar-bg: #202123;
   --sidebar-border: #2f3037;
   --sidebar-link: #ececf1;
@@ -26,6 +27,7 @@ pre {
 
 [data-bs-theme='dark'] {
   --main-bg: #101217;
+  --navbar-bg: #202123;
 }
 
 body {
@@ -36,6 +38,9 @@ body {
   position: sticky;
   top: 0;
   z-index: 1001;
+  height: var(--navbar-height);
+  background: var(--navbar-bg) !important;
+  border-bottom: 1px solid var(--sidebar-border);
 }
 
 .navbar.with-sidebar {
@@ -51,7 +56,7 @@ body {
   width: var(--sidebar-width);
   background: var(--sidebar-bg);
   border-right: 1px solid var(--sidebar-border);
-  overflow: hidden;
+  /*overflow: hidden;*/
   z-index: 1020;
   transition: width 0.2s ease;
 }
@@ -198,6 +203,10 @@ body.sidebar-collapsed .app-sidebar {
   width: var(--sidebar-width-collapsed);
 }
 
+body.sidebar-collapsed .sidebar-logo{
+  display: none !important;
+}
+
 body.sidebar-collapsed .navbar.with-sidebar,
 body.sidebar-collapsed .app-main.with-sidebar {
   margin-left: var(--sidebar-width-collapsed);
@@ -215,8 +224,12 @@ body.sidebar-collapsed .app-workspace-dropdown-toggle {
   justify-content: center;
 }
 
-body.sidebar-collapsed .app-profile-menu-toggle {
-  justify-content: center;
+body.sidebar-collapsed .app-profile-menu-toggle,body.sidebar-collapsed .sidebar-header {
+  justify-content: center !important;
+}
+
+body.sidebar-collapsed .profile-name-wrapper{
+  overflow: visible !important;
 }
 
 body.sidebar-collapsed .app-side-link {
@@ -225,9 +238,9 @@ body.sidebar-collapsed .app-side-link {
   padding-right: 0.5rem;
 }
 
-body.sidebar-collapsed .app-sidebar-toggle {
+/*body.sidebar-collapsed .app-sidebar-toggle {
   margin-left: auto;
-}
+}*/
 
 @media (max-width: 767.98px) {
   .navbar.with-sidebar {

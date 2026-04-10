@@ -1,6 +1,6 @@
 <aside class="app-sidebar d-none d-md-flex flex-column" id="workspace-sidebar">
   <div class="app-sidebar-inner d-flex flex-column h-100">
-    <div class="sidebar-header d-flex align-items-center justify-content-between px-2 pt-3 pb-2">
+    <div class="sidebar-header d-flex align-items-center justify-content-between px-2 pt-2 pb-2">
       <a class="sidebar-logo d-flex align-items-center gap-2 text-decoration-none" href="/workspaces">
         <span class="sidebar-logo-mark"><i class="bi bi-hurricane"></i></span>
         <span class="sidebar-logo-text fw-bold">SiteKraken</span>
@@ -60,7 +60,7 @@
             data-bs-toggle="dropdown"
             aria-expanded="false"
             title="<%= currentUser.displayName || currentUser.email || 'Profile' %>">
-            <span class="d-flex align-items-center gap-2">
+            <span class="d-flex align-items-center gap-2 text-truncate profile-name-wrapper">
               <i class="bi bi-person-circle app-side-link-icon"></i>
               <span class="d-block text-truncate app-side-link-text"><%= currentUser.displayName || currentUser.email %></span>
             </span>
