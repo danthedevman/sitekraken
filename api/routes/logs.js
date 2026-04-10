@@ -52,9 +52,6 @@ function normalizeLog(raw = {}, context = {}) {
     host: cleanString(raw.host || context.host || "", 300),
     source: cleanString(raw.source || "embed", 50),
     userAgent: cleanString(raw.userAgent || context.userAgent || "", 600),
-    sessionId: cleanString(raw.sessionId || context.sessionId || "", 120),
-    visitorId: cleanString(raw.visitorId || context.visitorId || "", 120),
-    userSession: cleanString(raw.userSession || context.userSession || "", 160),
     language: cleanString(raw.language || context.language || "", 40),
     ts: raw.ts ? new Date(raw.ts) : new Date(),
     metadata: normalizeMetadata(raw.metadata)
@@ -100,9 +97,7 @@ export default async function logsRoutes(fastify) {
       host: payload.host || request.query?.host || "",
       userAgent: request.headers["user-agent"],
       language: request.headers["accept-language"],
-      sessionId: payload.sessionId,
-      visitorId: payload.visitorId,
-      userSession: payload.userSession
+      
     };
 
     const normalized = events

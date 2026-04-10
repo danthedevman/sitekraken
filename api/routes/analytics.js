@@ -56,9 +56,6 @@ function normalizeEvent(rawEvent = {}, context = {}) {
     scrollPercent,
     viewportW,
     viewportH,
-    sessionId: cleanString(rawEvent.sessionId || context.sessionId || "", 120),
-    visitorId: cleanString(rawEvent.visitorId || context.visitorId || "", 120),
-    userSession: cleanString(rawEvent.userSession || context.userSession || "", 160),
     source: cleanString(rawEvent.source || "embed", 40),
     userAgent: cleanString(rawEvent.userAgent || context.userAgent || "", 600),
     language: cleanString(rawEvent.language || context.language || "", 40),
@@ -106,9 +103,6 @@ export default async function analyticsRoutes(fastify) {
       pathname: payload.pathname,
       title: payload.title,
       referrer: payload.referrer,
-      sessionId: payload.sessionId,
-      visitorId: payload.visitorId,
-      userSession: payload.userSession,
       userAgent: request.headers["user-agent"],
       language: request.headers["accept-language"]
     };

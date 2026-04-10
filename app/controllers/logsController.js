@@ -72,7 +72,6 @@ export async function index(req, res) {
     level: { level: sortDirection, createdAt: -1 },
     type: { type: sortDirection, createdAt: -1 },
     message: { message: sortDirection, createdAt: -1 },
-    userSession: { userSession: sortDirection, createdAt: -1 },
     createdAt: { createdAt: sortDirection, _id: sortDirection }
   };
 
@@ -86,8 +85,7 @@ export async function index(req, res) {
       { message: { $regex: pattern } },
       { type: { $regex: pattern } },
       { level: { $regex: pattern } },
-      { pageUrl: { $regex: pattern } },
-      { userSession: { $regex: pattern } }
+      { pageUrl: { $regex: pattern } }
     ];
   }
 
@@ -112,7 +110,6 @@ export async function index(req, res) {
       type: String(log.type || ''),
       message: String(log.message || ''),
       pageUrl: String(log.pageUrl || ''),
-      userSession: String(log.userSession || ''),
       createdAtLabel: formatDateTime(log.createdAt || log.ts),
       createdAtIso: (log.createdAt || log.ts) ? new Date(log.createdAt || log.ts).toISOString() : ''
     })),
@@ -161,9 +158,6 @@ export async function show(req, res) {
       title: String(log.title || ''),
       referrer: String(log.referrer || ''),
       source: String(log.source || ''),
-      userSession: String(log.userSession || ''),
-      sessionId: String(log.sessionId || ''),
-      visitorId: String(log.visitorId || ''),
       createdAtLabel: formatDateTime(log.createdAt || log.ts),
       metadataJson: JSON.stringify(log.metadata || {}, null, 2)
     }

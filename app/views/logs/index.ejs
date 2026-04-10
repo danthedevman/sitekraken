@@ -13,8 +13,7 @@
     { key: 'createdAt', label: 'When', sortType: 'date' },
     { key: 'level', label: 'Level' },
     { key: 'type', label: 'Type' },
-    { key: 'message', label: 'Message' },
-    { key: 'userSession', label: 'User session' }
+    { key: 'message', label: 'Message' }
   ];
 
   const rows = logs.map((log) => ({
@@ -23,15 +22,13 @@
       createdAt: log.createdAtIso,
       level: log.level,
       type: log.type,
-      message: log.message,
-      userSession: log.userSession
+      message: log.message
     },
     cells: {
       createdAt: log.createdAtLabel,
       level: `<span class="badge text-bg-${log.level === 'error' || log.level === 'fatal' ? 'danger' : log.level === 'warn' ? 'warning' : 'secondary'}">${log.level}</span>`,
       type: `<code>${log.type}</code>`,
-      message: `<div class="text-truncate" style="max-width: 520px;" title="${log.message.replaceAll('"', '&quot;')}">${log.message || '-'}</div>`,
-      userSession: log.userSession ? `<code>${log.userSession}</code>` : '<span class="text-muted">—</span>'
+      message: `<div class="text-truncate" style="max-width: 520px;" title="${log.message.replaceAll('"', '&quot;')}">${log.message || '-'}</div>`
     }
   }));
 %>
