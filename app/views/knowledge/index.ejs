@@ -1,4 +1,4 @@
-<%- include('../partials/tabLinks', { workspace, activeTab: 'knowledge', tabLinks }) %>
+<%- include('../partials/chatbotTabLinks', { workspace, activeTab: 'knowledge', tabLinks }) %>
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="h3 mb-0">Knowledge · <%= workspace.name %></h1>
   <div class="d-flex gap-2">
@@ -7,45 +7,52 @@
   </div>
 </div>
 
-<div class="card">
-  <div class="card-body">
-    <table class="table align-middle">
-      <thead>
-        <tr>
-          <th>Title</th>
-          <th>Status</th>
-          <th>OpenAI File</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <% entries.forEach(entry => { %>
-          <tr>
-            <td><%= entry.title %></td>
-            <td>
-              <span class="badge bg-<%= entry.status === 'published' ? 'success' : 'secondary' %>">
-                <%= entry.status %>
-              </span>
-            </td>
-            <td><code><%= entry.openaiFileId || '-' %></code></td>
-            <td class="text-end">
-              <div class="d-inline-flex gap-2">
-                <a href="/workspaces/<%= workspace._id %>/chatbot/knowledge/<%= entry._id %>" class="btn btn-sm btn-outline-primary">View</a>
-                <a href="/workspaces/<%= workspace._id %>/chatbot/knowledge/<%= entry._id %>/edit" class="btn btn-sm btn-outline-secondary">Edit</a>
+<%
+  const columns = [
+    { key: 'title', label: 'Title' },
+    { key: 'status', label: 'Status' },
+    { key: 'openaiFileId', label: 'OpenAI File' },
+    { key: 'actions', label: '', sortable: false }
+  ];
 
-                <form
-                  method="POST"
-                  action="/workspaces/<%= workspace._id %>/chatbot/knowledge/<%= entry._id %>?_method=DELETE"
-                  class="d-inline"
-                  onsubmit="return confirm('Delete this knowledge entry and its associated vector files?');"
-                >
-                  <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-                </form>
-              </div>
-            </td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
-  </div>
-</div>
+  const rows = entries.map((entry) => ({
+    href: `/workspaces/${workspace._id}/chatbot/knowledge/${entry._id}`,
+    values: {
+      id: entry._id,
+      title: entry.title || '',
+      status: entry.status || 'draft',
+      openaiFileId: entry.openaiFileId || ''
+    },
+    cells: {
+      title: entry.title || '<span class="text-muted">(untitled)</span>',
+      status: `<span class="badge bg-${entry.status === 'published' ? 'success' : 'secondary'}">${entry.status || 'draft'}</span>`,
+      openaiFileId: `<code>${entry.openaiFileId || '-'}</code>`,
+      actions: `
+        <div class="d-inline-flex gap-2">
+          <a href="/workspaces/${workspace._id}/chatbot/knowledge/${entry._id}" class="btn btn-sm btn-outline-primary">View</a>
+          <a href="/workspaces/${workspace._id}/chatbot/knowledge/${entry._id}/edit" class="btn btn-sm btn-outline-secondary">Edit</a>
+          <form method="POST" action="/workspaces/${workspace._id}/chatbot/knowledge/${entry._id}?_method=DELETE" class="d-inline" onsubmit="return confirm('Delete this knowledge entry and all associated locations?');">
+            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+          </form>
+        </div>
+      `
+    }
+  }));
+%>
+
+<%- include('../partials/bootstrapTableWidget', {
+  tableId: 'knowledge-table',
+  columns,
+  rows,
+  defaultPageSize: 20,
+  selectableRows: true,
+  selectionValueKey: 'id',
+  bulkActions: {
+    delete: {
+      action: `/workspaces/${workspace._id}/chatbot/knowledge/bulk-delete`,
+      method: 'POST',
+      inputName: 'ids',
+      confirmMessage: 'Delete selected knowledge entries and all associated locations?'
+    }
+  }
+}) %>
