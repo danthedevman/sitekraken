@@ -95,6 +95,31 @@
     );
   }
 
+
+  function getOrCreateUserSession() {
+    const storageKey = "__sk_user_session";
+    const preferred =
+      String(config.userSession || config.user_session || window.__skUserSession || "").trim() || "";
+
+    try {
+      const existing = window.localStorage.getItem(storageKey);
+      if (existing) {
+        window.__skUserSession = existing;
+        return existing;
+      }
+
+      const value = preferred || createId("usr");
+      window.localStorage.setItem(storageKey, value);
+      window.__skUserSession = value;
+      return value;
+    } catch {
+      const value = preferred || createId("usr");
+      window.__skUserSession = value;
+      return value;
+    }
+  }
+
+  const userSession = getOrCreateUserSession();
   function safeJsonParse(value, fallback) {
     try {
       return JSON.parse(value);
@@ -1252,6 +1277,7 @@
             pageUrl: window.location.href,
             pageTitle: document.title,
             siteName: config.siteName,
+            userSession: userSession,
           }),
         });
 

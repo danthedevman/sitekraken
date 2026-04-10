@@ -24,6 +24,7 @@
   var sessionStorageKey = "__sk_analytics_session_id";
   var visitorStorageKey = "__sk_analytics_visitor_id";
   var flushEveryMs = Number(moduleConfig.flushEveryMs || 7000);
+  var userSessionStorageKey = "__sk_user_session";
   var heartbeatEveryMs = Number(moduleConfig.heartbeatEveryMs || 30000);
   var clickTrackingEnabled = moduleConfig.trackClicks !== false;
   var linkTrackingEnabled = moduleConfig.trackLinks !== false;
@@ -40,20 +41,26 @@
     );
   }
 
-  function getOrCreateStorageValue(storage, key, prefix) {
+  function getOrCreateStorageValue(storage, key, prefix, preferredValue) {
     try {
       var existing = storage.getItem(key);
       if (existing) return existing;
-      var value = createId(prefix);
+      var value = preferredValue || createId(prefix);
       storage.setItem(key, value);
       return value;
     } catch {
-      return createId(prefix);
+      return preferredValue || createId(prefix);
     }
   }
 
+  var sharedUserSession =
+    String(moduleConfig.userSession || moduleConfig.user_session || "").trim() || "";
+
   var sessionId = getOrCreateStorageValue(w.sessionStorage, sessionStorageKey, "sess");
   var visitorId = getOrCreateStorageValue(w.localStorage, visitorStorageKey, "vis");
+  var userSession = getOrCreateStorageValue(w.localStorage, userSessionStorageKey, "usr", sharedUserSession);
+
+  w.__skUserSession = userSession;
   var scrollMilestones = new Set();
   var queue = [];
   var flushTimer = null;
@@ -67,6 +74,7 @@
       host: w.location.hostname,
       sessionId: sessionId,
       visitorId: visitorId,
+      userSession: userSession,
       viewportW: w.innerWidth || 0,
       viewportH: w.innerHeight || 0,
       language: navigator.language || "",
@@ -109,7 +117,8 @@
         title: d.title || "",
         referrer: d.referrer || "",
         sessionId: sessionId,
-        visitorId: visitorId
+        visitorId: visitorId,
+        userSession: userSession
       }),
       keepalive: true,
       credentials: "omit"

@@ -10,6 +10,7 @@
     { key: 'threadId', label: 'Thread', sortType: 'string' },
     { key: 'messageCount', label: 'Messages', sortType: 'number' },
     { key: 'source', label: 'Source', sortType: 'string' },
+    { key: 'userSession', label: 'User session', sortType: 'string' },
     { key: 'pageTitle', label: 'Page', sortType: 'string' },
     { key: 'updatedAt', label: 'Updated', sortType: 'date' }
   ];
@@ -20,6 +21,7 @@
       threadId: interaction.threadId,
       messageCount: interaction.messageCount,
       source: interaction.source,
+      userSession: interaction.userSession,
       pageTitle: interaction.pageTitle || interaction.pageUrl,
       updatedAt: interaction.updatedAtIso
     },
@@ -27,6 +29,7 @@
       threadId: `<code>${interaction.threadId}</code>`,
       messageCount: String(interaction.messageCount),
       source: interaction.source,
+      userSession: interaction.userSession ? `<code>${interaction.userSession}</code>` : '<span class="text-muted">—</span>',
       pageTitle: interaction.pageTitle || interaction.pageUrl || '<span class="text-muted">(unknown)</span>',
       updatedAt: interaction.updatedAtLabel || '<span class="text-muted">—</span>'
     }

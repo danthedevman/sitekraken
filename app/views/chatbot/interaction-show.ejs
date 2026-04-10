@@ -24,6 +24,10 @@
         <div><%= interaction.createdAtLabel || '—' %></div>
       </div>
       <div class="col-md-3">
+        <div class="text-muted small">User session</div>
+        <div><code><%= interaction.userSession || '—' %></code></div>
+      </div>
+      <div class="col-md-3">
         <div class="text-muted small">Page</div>
         <% if (interaction.pageUrl) { %>
           <a href="<%= interaction.pageUrl %>" target="_blank" rel="noopener noreferrer"><%= interaction.pageTitle || interaction.pageUrl %></a>

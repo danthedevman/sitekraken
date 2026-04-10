@@ -12,6 +12,7 @@ import openaiPlugin from "./plugins/openai.js";
 import chatRoutes from "./routes/chat.js";
 import embedRoutes from "./routes/embed.js";
 import analyticsRoutes from "./routes/analytics.js";
+import logsRoutes from "./routes/logs.js";
 import fastifyStatic from "@fastify/static";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -45,6 +46,7 @@ await app.register(openaiPlugin);
 await app.register(embedRoutes, { prefix: "/embed" });
 await app.register(chatRoutes, { prefix: "/api" });
 await app.register(analyticsRoutes, { prefix: "/api/analytics" });
+await app.register(logsRoutes, { prefix: "/api/logs" });
 
 app.get("/health", async function (req, reply) {
   return reply.status(200).send({ ok: true });
