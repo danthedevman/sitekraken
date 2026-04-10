@@ -21,60 +21,14 @@
 
   var apiUrl = String(moduleConfig.apiUrl || w.location.origin).replace(/\/+$/, "");
   var endpoint = apiUrl + "/api/logs/events";
-  var sessionStorageKey = "__sk_logs_session_id";
-  var visitorStorageKey = "__sk_logs_visitor_id";
-  var userSessionStorageKey = "__sk_user_session";
   var flushEveryMs = Number(moduleConfig.flushEveryMs || 4000);
   var captureConsoleErrors = moduleConfig.captureConsoleErrors !== false;
 
-  function createId(prefix) {
-    return (
-      prefix +
-      "_" +
-      Date.now().toString(36) +
-      "_" +
-      Math.random().toString(36).slice(2, 10)
-    );
-  }
-
-  function getOrCreateStorageValue(storage, key, prefix, preferredValue) {
-    try {
-      var existing = storage.getItem(key);
-      if (existing) return existing;
-      var value = preferredValue || createId(prefix);
-      storage.setItem(key, value);
-      return value;
-    } catch {
-      return preferredValue || createId(prefix);
-    }
-  }
-
-  var sharedUserSession =
-    String(moduleConfig.userSession || moduleConfig.user_session || "").trim() || "";
-
-  var sessionId = getOrCreateStorageValue(w.sessionStorage, sessionStorageKey, "sess");
-  var visitorId = getOrCreateStorageValue(w.localStorage, visitorStorageKey, "vis");
-  var userSession = getOrCreateStorageValue(
-    w.localStorage,
-    userSessionStorageKey,
-    "usr",
-    sharedUserSession
-  );
   var queue = [];
 
   function getContext() {
     return {
-      pageUrl: w.location.href,
-      pathname: w.location.pathname,
-      title: d.title || "",
-      referrer: d.referrer || "",
-      host: w.location.hostname,
-      sessionId: sessionId,
-      visitorId: visitorId,
-      userSession: userSession,
       source: "embed",
-      userAgent: navigator.userAgent || "",
-      language: navigator.language || ""
     };
   }
 
@@ -106,15 +60,7 @@
         "x-api-key": apiKey
       },
       body: JSON.stringify({
-        events: events,
-        host: w.location.hostname,
-        pageUrl: w.location.href,
-        pathname: w.location.pathname,
-        title: d.title || "",
-        referrer: d.referrer || "",
-        sessionId: sessionId,
-        visitorId: visitorId,
-        userSession: userSession
+        events: events
       }),
       keepalive: true,
       credentials: "omit"
@@ -122,8 +68,6 @@
       // silent drop
     });
   }
-
-  w.__skUserSession = userSession;
 
   pushLog("info", "library_loaded", "Logs library initialized.");
   pushLog("info", "page_view", "Page loaded.");

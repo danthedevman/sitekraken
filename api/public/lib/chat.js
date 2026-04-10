@@ -57,11 +57,9 @@
     maxWidth: 420,
     panelWidth: "min(420px, calc(100vw - 20px))",
     panelHeight: "min(600px, calc(100vh - 110px))",
-    storageKey: "embedded-chatbot-state-v8",
     initialMessage: "Hi, How can I help you?",
     quickMessages: [],
     footerLinks: [],
-    siteName: window.location.hostname,
     allowedDomains: [],
     logoUrl: "",
   };
@@ -95,38 +93,6 @@
     );
   }
 
-
-  function getOrCreateUserSession() {
-    const storageKey = "__sk_user_session";
-    const preferred =
-      String(config.userSession || config.user_session || window.__skUserSession || "").trim() || "";
-
-    try {
-      const existing = window.localStorage.getItem(storageKey);
-      if (existing) {
-        window.__skUserSession = existing;
-        return existing;
-      }
-
-      const value = preferred || createId("usr");
-      window.localStorage.setItem(storageKey, value);
-      window.__skUserSession = value;
-      return value;
-    } catch {
-      const value = preferred || createId("usr");
-      window.__skUserSession = value;
-      return value;
-    }
-  }
-
-  const userSession = getOrCreateUserSession();
-  function safeJsonParse(value, fallback) {
-    try {
-      return JSON.parse(value);
-    } catch {
-      return fallback;
-    }
-  }
 
   function normalizeQuickMessages(value) {
     if (!Array.isArray(value)) return [];
@@ -231,7 +197,6 @@
   config.initialMessage = String(
     config.initialMessage || DEFAULTS.initialMessage,
   );
-  config.siteName = String(config.siteName || window.location.hostname);
   config.accent = sanitizeCssColor(config.accent, DEFAULTS.accent);
   config.accentText = sanitizeCssColor(config.accentText, DEFAULTS.accentText);
   config.border = sanitizeCssColor(config.border, DEFAULTS.border);
@@ -268,19 +233,6 @@
   config.logoUrl = sanitizeUrl(config.logoUrl);
 
   function loadState() {
-    const raw = localStorage.getItem(config.storageKey);
-    const parsed = raw ? safeJsonParse(raw, null) : null;
-
-    if (parsed && parsed.threadId && Array.isArray(parsed.messages)) {
-      return {
-        threadId: parsed.threadId,
-        isOpen: false,//Boolean(parsed.isOpen),
-        isLoading: false,
-        isFullscreen: false,
-        messages: parsed.messages,
-      };
-    }
-
     return {
       threadId: createId("thread"),
       isOpen: false,
@@ -302,15 +254,7 @@
   let originalBodyOverflowY = null;
 
   function persistState() {
-    localStorage.setItem(
-      config.storageKey,
-      JSON.stringify({
-        threadId: state.threadId,
-        isOpen: state.isOpen,
-        isFullscreen: state.isFullscreen,
-        messages: state.messages,
-      }),
-    );
+    return;
   }
 
   function sanitizeHtml(html) {
@@ -1274,10 +1218,6 @@
             threadId: state.threadId,
             message: text,
             source: "website-embed",
-            pageUrl: window.location.href,
-            pageTitle: document.title,
-            siteName: config.siteName,
-            userSession: userSession,
           }),
         });
 
