@@ -1,0 +1,111 @@
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1">Workspace settings</h1>
+    <p class="text-muted mb-0">Manage general settings, allowed domains, and workspace users.</p>
+  </div>
+  <a href="/workspaces/<%= workspace._id %>" class="btn btn-light">Back</a>
+</div>
+
+<div class="row g-4">
+  <div class="col-12 col-lg-8">
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <h2 class="h5 mb-3">General</h2>
+        <form method="POST" action="/workspaces/<%= workspace._id %>/settings?_method=PUT">
+          <div class="mb-3">
+            <label class="form-label">Name</label>
+            <input type="text" class="form-control" name="name" value="<%= workspace.name %>" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" name="description" rows="3"><%= workspace.description || '' %></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Allowed domains</label>
+            <textarea class="form-control" name="allowedDomains" rows="5" placeholder="example.com&#10;docs.example.com"><%= allowedDomainsText %></textarea>
+            <div class="form-text">One domain per line. Empty allows all domains.</div>
+          </div>
+          <button class="btn btn-primary" type="submit">Save settings</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <h2 class="h5 mb-3">Workspace users</h2>
+
+        <form method="POST" action="/workspaces/<%= workspace._id %>/settings/members" class="row g-2 mb-3">
+          <div class="col-md-6">
+            <input type="email" class="form-control" name="email" placeholder="user@example.com" required />
+          </div>
+          <div class="col-md-3">
+            <select name="role" class="form-select">
+              <option value="admin">admin</option>
+            </select>
+          </div>
+          <div class="col-md-3 d-grid">
+            <button type="submit" class="btn btn-outline-primary">Add user</button>
+          </div>
+        </form>
+
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (!members.length) { %>
+                <tr><td colspan="4" class="text-muted">No users found.</td></tr>
+              <% } %>
+              <% members.forEach((member) => { %>
+                <tr>
+                  <td><%= member.displayName %></td>
+                  <td class="text-muted"><%= member.email || '—' %></td>
+                  <td>
+                    <% if (member.role === 'owner') { %>
+                      <span class="badge text-bg-primary">owner</span>
+                    <% } else { %>
+                      <form method="POST" action="/workspaces/<%= workspace._id %>/settings/members/<%= member.userId %>?_method=PUT" class="d-inline-flex gap-2 align-items-center">
+                        <select name="role" class="form-select form-select-sm" style="width: 120px;">
+                          <option value="admin" selected>admin</option>
+                        </select>
+                        <button class="btn btn-sm btn-outline-secondary" type="submit">Update</button>
+                      </form>
+                    <% } %>
+                  </td>
+                  <td class="text-end">
+                    <% if (member.role === 'owner') { %>
+                      <span class="text-muted small">Owner cannot be removed</span>
+                    <% } else { %>
+                      <form method="POST" action="/workspaces/<%= workspace._id %>/settings/members/<%= member.userId %>?_method=DELETE" class="d-inline" onsubmit="return confirm('Remove this user from workspace?');">
+                        <button class="btn btn-sm btn-outline-danger" type="submit">Remove</button>
+                      </form>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-danger shadow-sm">
+      <div class="card-body">
+        <h2 class="h5 text-danger mb-2">Danger zone</h2>
+        <p class="text-muted mb-3">Deleting this workspace will permanently remove all associated data, including chatbot files, knowledge, R2 assets, OpenAI files, and vector store data.</p>
+        <form method="POST" action="/workspaces/<%= workspace._id %>?_method=DELETE" onsubmit="return confirm('Delete this workspace and all associated data? This cannot be undone.');">
+          <button class="btn btn-danger" type="submit" <%= workspace.currentUserRole === 'owner' ? '' : 'disabled' %>>Delete workspace</button>
+          <% if (workspace.currentUserRole !== 'owner') { %>
+            <p class="small text-muted mt-2 mb-0">Only the workspace owner can delete this workspace.</p>
+          <% } %>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
