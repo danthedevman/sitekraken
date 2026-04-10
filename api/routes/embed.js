@@ -1,5 +1,34 @@
 import { resolveWorkspaceAccess } from "../lib/workspace-auth.js";
 
+function getRequestBaseUrl(request) {
+  const forwardedProto = request.headers["x-forwarded-proto"];
+  const forwardedHost = request.headers["x-forwarded-host"];
+
+  const protocol = String(
+    Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto || request.protocol || "https"
+  )
+    .split(",")[0]
+    .trim();
+
+  const host = String(
+    Array.isArray(forwardedHost)
+      ? forwardedHost[0]
+      : forwardedHost || request.headers.host || request.hostname
+  )
+    .split(",")[0]
+    .trim();
+
+  return `${protocol}://${host}`;
+}
+
+function getOriginFromUrl(url, fallbackOrigin) {
+  try {
+    return new URL(String(url)).origin;
+  } catch {
+    return fallbackOrigin;
+  }
+}
+
 function buildModulesFromWorkspace(workspace, request) {
   const chatModule = workspace.chatbot || {};
   const analyticsModule = workspace.analytics || {};
@@ -8,7 +37,17 @@ function buildModulesFromWorkspace(workspace, request) {
     ? workspace.allowedDomains
     : [];
 
-  const baseUrl = `${request.protocol}://${request.hostname}`;
+  const baseUrl = getRequestBaseUrl(request);
+  const analyticsScriptUrl = analyticsModule.scriptUrl || `${baseUrl}/public/lib/analytics.js`;
+  const logsScriptUrl = logsModule.scriptUrl || `${baseUrl}/public/lib/logs.js`;
+  const analyticsApiUrl = getOriginFromUrl(
+    analyticsModule?.config?.apiUrl,
+    getOriginFromUrl(analyticsScriptUrl, baseUrl)
+  );
+  const logsApiUrl = getOriginFromUrl(
+    logsModule?.config?.apiUrl,
+    getOriginFromUrl(logsScriptUrl, baseUrl)
+  );
 
   const userSession = `usr_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
 
@@ -25,7 +64,7 @@ function buildModulesFromWorkspace(workspace, request) {
     {
       ...analyticsModule,
       name: analyticsModule.name || "analytics",
-      scriptUrl: analyticsModule.scriptUrl || `${baseUrl}/public/lib/analytics.js`,
+      scriptUrl: analyticsScriptUrl,
       module:
         typeof analyticsModule.module === "boolean" ? analyticsModule.module : false,
       enabled:
@@ -33,14 +72,14 @@ function buildModulesFromWorkspace(workspace, request) {
       config: {
         ...(analyticsModule.config || {}),
         allowedDomains,
-        apiUrl: baseUrl,
+        apiUrl: analyticsApiUrl,
         userSession
       }
     },
     {
       ...logsModule,
       name: logsModule.name || "logs",
-      scriptUrl: logsModule.scriptUrl || `${baseUrl}/public/lib/logs.js`,
+      scriptUrl: logsScriptUrl,
       module:
         typeof logsModule.module === "boolean" ? logsModule.module : false,
       enabled:
@@ -48,7 +87,7 @@ function buildModulesFromWorkspace(workspace, request) {
       config: {
         ...(logsModule.config || {}),
         allowedDomains,
-        apiUrl: baseUrl,
+        apiUrl: logsApiUrl,
         userSession
       }
     }
