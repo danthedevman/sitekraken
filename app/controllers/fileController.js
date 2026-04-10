@@ -53,6 +53,15 @@ function buildR2Key({ workspaceId, originalName }) {
     .toString('hex')}.${ext}`;
 }
 
+function buildChatbotTabLinks(workspaceId) {
+  return [
+    { key: 'chatbot', label: 'Configuration', href: `/workspaces/${workspaceId}/chatbot` },
+    { key: 'files', label: 'Files', href: `/workspaces/${workspaceId}/chatbot/files` },
+    { key: 'knowledge', label: 'Knowledge', href: `/workspaces/${workspaceId}/chatbot/knowledge` },
+    { key: 'interactions', label: 'Interactions', href: `/workspaces/${workspaceId}/chatbot/interactions` }
+  ];
+}
+
 async function uploadFileToR2({ fileBuffer, mimeType, workspaceId, originalName }) {
   const key = buildR2Key({ workspaceId, originalName });
 
@@ -99,6 +108,7 @@ export async function index(req, res) {
   res.render('files/index', {
     workspace,
     active: 'chatbot',
+    tabLinks: buildChatbotTabLinks(workspace._id),
     files: serializeDocs(docs)
   });
 }

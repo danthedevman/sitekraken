@@ -1,37 +1,6 @@
-<%
-  const routeTabs = (() => {
-    if (!workspace?._id) return [];
-
-    const routeTabMap = {
-      analytics: [
-        { key: 'analytics', label: 'Dashboard', href: `/workspaces/${workspace._id}/analytics` },
-        { key: 'logs', label: 'Logs', href: `/workspaces/${workspace._id}/logs` }
-      ],
-      chatbot: [
-        { key: 'chatbot', label: 'Configuration', href: `/workspaces/${workspace._id}/chatbot` },
-        { key: 'files', label: 'Files', href: `/workspaces/${workspace._id}/chatbot/files` },
-        { key: 'knowledge', label: 'Knowledge', href: `/workspaces/${workspace._id}/chatbot/knowledge` },
-        { key: 'interactions', label: 'Interactions', href: `/workspaces/${workspace._id}/chatbot/interactions` }
-      ]
-    };
-
-    const chatbotTabs = routeTabMap.chatbot;
-
-    if (activeTab === 'analytics' || activeTab === 'logs') {
-      return routeTabMap.analytics;
-    }
-
-    if (chatbotTabs.some((tab) => tab.key === activeTab)) {
-      return chatbotTabs;
-    }
-
-    return [];
-  })();
-%>
-
-<% if (routeTabs.length) { %>
+<% if (Array.isArray(tabLinks) && tabLinks.length) { %>
 <ul class="nav nav-tabs mb-4">
-  <% routeTabs.forEach((tab) => { %>
+  <% tabLinks.forEach((tab) => { %>
   <li class="nav-item" role="presentation">
     <a href="<%= tab.href %>" class="nav-link <%= activeTab === tab.key ? 'active' : '' %>">
       <%= tab.label %>

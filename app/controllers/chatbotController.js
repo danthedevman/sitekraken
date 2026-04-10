@@ -127,6 +127,15 @@ function formatDateTime(value) {
   return date.toLocaleString();
 }
 
+function buildChatbotTabLinks(workspaceId) {
+  return [
+    { key: 'chatbot', label: 'Configuration', href: `/workspaces/${workspaceId}/chatbot` },
+    { key: 'files', label: 'Files', href: `/workspaces/${workspaceId}/chatbot/files` },
+    { key: 'knowledge', label: 'Knowledge', href: `/workspaces/${workspaceId}/chatbot/knowledge` },
+    { key: 'interactions', label: 'Interactions', href: `/workspaces/${workspaceId}/chatbot/interactions` }
+  ];
+}
+
 export async function index(req, res) {
   const { workspaces } = getCollections();
   const workspace = await getWorkspace(req);
@@ -168,6 +177,7 @@ export async function index(req, res) {
   res.render('chatbot/index', {
     workspace: serializedWorkspace,
     active:"chatbot",
+    tabLinks: buildChatbotTabLinks(serializedWorkspace._id),
     chatbot,
     config,
     embedScriptTag: buildEmbedScriptTag(serializedWorkspace),
@@ -317,6 +327,7 @@ export async function interactions(req, res) {
   res.render('chatbot/interactions', {
     workspace: serializeDoc(workspace),
     active: 'chatbot',
+    tabLinks: buildChatbotTabLinks(workspace._id),
     interactions: interactionRows,
     tableState: {
       search,
@@ -365,6 +376,7 @@ export async function showInteraction(req, res) {
   res.render('chatbot/interaction-show', {
     workspace: serializeDoc(workspace),
     active: 'chatbot',
+    tabLinks: buildChatbotTabLinks(workspace._id),
     interaction: {
       threadId,
       source: String(interaction.source || 'website'),
