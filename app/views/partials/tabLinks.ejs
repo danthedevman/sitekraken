@@ -1,6 +1,23 @@
-<%if(typeof tabs !== "undefined" && tabs){%>
+<%
+  const routeTabs = (() => {
+    if (!workspace?._id) return [];
+
+    if (activeTab === 'analytics') {
+      return [{ key: 'analytics', label: 'Interactions', href: `/workspaces/${workspace._id}/analytics/dashboard` }];
+    }
+
+    return [
+      { key: 'chatbot', label: 'Configuration', href: `/workspaces/${workspace._id}/chatbot` },
+      { key: 'files', label: 'Files', href: `/workspaces/${workspace._id}/chatbot/files` },
+      { key: 'knowledge', label: 'Knowledge', href: `/workspaces/${workspace._id}/chatbot/knowledge` },
+      { key: 'interactions', label: 'Interactions', href: `/workspaces/${workspace._id}/chatbot/interactions` }
+    ];
+  })();
+%>
+
+<% if (routeTabs.length) { %>
 <ul class="nav nav-tabs mb-4">
-  <% tabs.forEach(tab => { %>
+  <% routeTabs.forEach((tab) => { %>
   <li class="nav-item" role="presentation">
     <a href="<%= tab.href %>" class="nav-link <%= activeTab === tab.key ? 'active' : '' %>">
       <%= tab.label %>
@@ -8,5 +25,4 @@
   </li>
   <% }) %>
 </ul>
-
-<%}%>
+<% } %>
