@@ -22,6 +22,15 @@ async function getWorkspace(req) {
   return workspace;
 }
 
+function buildChatbotTabLinks(workspaceId) {
+  return [
+    { key: 'chatbot', label: 'Configuration', href: `/workspaces/${workspaceId}/chatbot` },
+    { key: 'files', label: 'Files', href: `/workspaces/${workspaceId}/chatbot/files` },
+    { key: 'knowledge', label: 'Knowledge', href: `/workspaces/${workspaceId}/chatbot/knowledge` },
+    { key: 'interactions', label: 'Interactions', href: `/workspaces/${workspaceId}/chatbot/interactions` }
+  ];
+}
+
 async function cleanupKnowledgeAssets(workspace, entry) {
   const vectorFileIds = [
     entry?.vectorStoreFileId,
@@ -184,6 +193,7 @@ export async function index(req, res) {
   res.render('knowledge/index', {
     workspace,
     active: 'chatbot',
+    tabLinks: buildChatbotTabLinks(workspace._id),
     entries: serializeDocs(docs)
   });
 }
@@ -199,6 +209,7 @@ export async function newForm(req, res) {
   res.render('knowledge/new', {
     workspace,
     active: 'chatbot',
+    tabLinks: buildChatbotTabLinks(workspace._id),
   });
 }
 
@@ -282,6 +293,7 @@ export async function show(req, res) {
   res.render('knowledge/show', {
     workspace,
     active: 'chatbot',
+    tabLinks: buildChatbotTabLinks(workspace._id),
     entry: serializeDoc(entry)
   });
 }
@@ -308,6 +320,7 @@ export async function editForm(req, res) {
   res.render('knowledge/edit', {
     workspace,
     active: 'chatbot',
+    tabLinks: buildChatbotTabLinks(workspace._id),
     entry: serializeDoc(entry)
   });
 }
