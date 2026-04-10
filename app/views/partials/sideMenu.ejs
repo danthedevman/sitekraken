@@ -17,7 +17,7 @@
     </div>
 
     <div class="app-sidebar-body flex-grow-1 overflow-auto">
-      <div class="sidebar-section pb-2">
+      <div class="sidebar-section py-1">
         <div class="subheader small text-uppercase text-secondary fw-semibold">Workspace</div>
         <a href="/workspaces/<%= workspace._id %>" class="nav-link app-side-link<%= active === 'overview' ? ' active' : '' %>">
           <i class="bi bi-grid-1x2 app-side-link-icon"></i><span class="app-side-link-text">Overview</span>
@@ -45,8 +45,8 @@
         <a href="/workspaces/<%= workspace._id %>/logs" class="nav-link app-side-link<%= active === 'logs' ? ' active' : '' %>">
           <i class="bi bi-journal-text app-side-link-icon"></i><span class="app-side-link-text">Logs</span>
         </a>
-        <a href="/workspaces/<%= workspace._id %>/scripts" class="nav-link app-side-link<%= active === 'scripts' ? ' active' : '' %>">
-          <i class="bi bi-code-slash app-side-link-icon"></i><span class="app-side-link-text">Scripts</span>
+        <a href="/workspaces/<%= workspace._id %>/social" class="nav-link app-side-link<%= active === 'social' ? ' active' : '' %>">
+          <i class="bi bi-chat-heart app-side-link-icon"></i><span class="app-side-link-text">Social</span>
         </a>
       </nav>
     </div>
