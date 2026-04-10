@@ -1,7 +1,9 @@
 <%
-  const widgetId = tableId || `table-widget-${Math.random().toString(36).slice(2, 9)}`;
-  const rowsPerPage = Number(defaultPageSize || 20);
-  const server = serverPagination || null;
+  const providedTableId = typeof tableId !== 'undefined' ? tableId : null;
+  const providedPageSize = typeof defaultPageSize !== 'undefined' ? defaultPageSize : 20;
+  const server = typeof serverPagination !== 'undefined' ? serverPagination : null;
+  const widgetId = providedTableId || `table-widget-${Math.random().toString(36).slice(2, 9)}`;
+  const rowsPerPage = Number(providedPageSize || 20);
   const hasServerPagination = Boolean(server);
   const serverPage = Number(server?.page || 1);
   const serverTotalPages = Number(server?.totalPages || 1);
@@ -16,13 +18,16 @@
   const pageSizeKey = `${queryParamPrefix}pageSize`;
   const sortKey = `${queryParamPrefix}sort`;
   const directionKey = `${queryParamPrefix}direction`;
-  const enableSelection = Boolean(selectableRows || bulkActions?.delete);
-  const selectionKey = String(selectionValueKey || 'id');
+  const selectable = typeof selectableRows !== 'undefined' ? selectableRows : false;
+  const actions = typeof bulkActions !== 'undefined' ? bulkActions : null;
+  const valueKey = typeof selectionValueKey !== 'undefined' ? selectionValueKey : 'id';
+  const enableSelection = Boolean(selectable || actions?.delete);
+  const selectionKey = String(valueKey || 'id');
   const rowSelectionValue = (row) => {
     const candidate = row?.values?.[selectionKey] ?? row?.id ?? row?.href ?? '';
     return String(candidate);
   };
-  const bulkDelete = bulkActions?.delete || null;
+  const bulkDelete = actions?.delete || null;
   const bulkDeleteMethod = String(bulkDelete?.method || 'POST').toUpperCase();
   const bulkDeleteInputName = String(bulkDelete?.inputName || 'ids');
   const bulkDeleteConfirmMessage = String(bulkDelete?.confirmMessage || 'Delete selected rows? This action cannot be undone.');
