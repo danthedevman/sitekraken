@@ -10,7 +10,6 @@ import {
 } from '../services/openaiService.js';
 import { findOwnedWorkspace, trackRecentWorkspaceVisit } from '../services/workspaceService.js';
 import { serializeDocs, toObjectId } from '../services/dbHelpers.js';
-import { buildWorkspaceTabs } from '../services/workspaceTabs.js';
 
 const storage = multer.memoryStorage();
 
@@ -100,7 +99,6 @@ export async function index(req, res) {
   res.render('files/index', {
     workspace,
     active: 'chatbot',
-    tabs: buildWorkspaceTabs(workspace._id),
     files: serializeDocs(docs)
   });
 }
