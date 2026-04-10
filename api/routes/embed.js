@@ -49,16 +49,13 @@ function buildModulesFromWorkspace(workspace, request) {
     getOriginFromUrl(logsScriptUrl, baseUrl)
   );
 
-  const userSession = `usr_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
-
   return [
     {
       ...chatModule,
       name: chatModule.name || "chat",
       config: {
         ...(chatModule.config || {}),
-        allowedDomains,
-        userSession
+        allowedDomains
       }
     },
     {
@@ -72,8 +69,7 @@ function buildModulesFromWorkspace(workspace, request) {
       config: {
         ...(analyticsModule.config || {}),
         allowedDomains,
-        apiUrl: analyticsApiUrl,
-        userSession
+        apiUrl: analyticsApiUrl
       }
     },
     {
@@ -87,8 +83,7 @@ function buildModulesFromWorkspace(workspace, request) {
       config: {
         ...(logsModule.config || {}),
         allowedDomains,
-        apiUrl: logsApiUrl,
-        userSession
+        apiUrl: logsApiUrl
       }
     }
   ];

@@ -213,7 +213,6 @@ export async function interactions(req, res) {
   const sortConfig = {
     threadId: { threadId: sortDirection },
     source: { source: sortDirection },
-    userSession: { userSession: sortDirection, updatedAt: -1 },
     pageTitle: { pageTitle: sortDirection, pageUrl: sortDirection },
     updatedAt: { updatedAt: sortDirection, createdAt: sortDirection },
     messageCount: { messageCount: sortDirection, updatedAt: -1 }
@@ -231,8 +230,7 @@ export async function interactions(req, res) {
       { source: { $regex: searchRegex } },
       { pageTitle: { $regex: searchRegex } },
       { pageUrl: { $regex: searchRegex } },
-      { siteName: { $regex: searchRegex } },
-      { userSession: { $regex: searchRegex } }
+      { siteName: { $regex: searchRegex } }
     ];
   }
 
@@ -318,7 +316,6 @@ export async function interactions(req, res) {
       pageUrl: String(thread.pageUrl || ''),
       messageCount: Number(thread.messageCount ?? counts.get(threadId) ?? 0),
       updatedAtLabel: formatDateTime(updatedAt),
-      userSession: String(thread.userSession || ''),
       updatedAtIso: updatedAt ? new Date(updatedAt).toISOString() : '',
       interactionHref: `/workspaces/${workspaceId}/chatbot/interactions/${encodeURIComponent(threadId)}`
     };
@@ -381,7 +378,6 @@ export async function showInteraction(req, res) {
       threadId,
       source: String(interaction.source || 'website'),
       siteName: String(interaction.siteName || ''),
-      userSession: String(interaction.userSession || ''),
       pageTitle: String(interaction.pageTitle || ''),
       pageUrl: String(interaction.pageUrl || ''),
       createdAtLabel: formatDateTime(interaction.createdAt),

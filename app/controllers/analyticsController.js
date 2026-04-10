@@ -57,18 +57,6 @@ export async function index(req, res) {
     type: 'page_view'
   });
 
-  const uniqueVisitors = await collection.distinct('visitorId', {
-    workspaceId,
-    createdAt: { $gte: sevenDaysAgo },
-    visitorId: { $ne: '' }
-  });
-
-  const uniqueSessions = await collection.distinct('sessionId', {
-    workspaceId,
-    createdAt: { $gte: sevenDaysAgo },
-    sessionId: { $ne: '' }
-  });
-
   const clicksByType = await collection
     .aggregate([
       { $match: { workspaceId, createdAt: { $gte: sevenDaysAgo }, type: { $in: ['click', 'link_click', 'button_click'] } } },
@@ -87,8 +75,7 @@ export async function index(req, res) {
           pathname: { $nin: ['', null] }
         }
       },
-      { $group: { _id: '$pathname', views: { $sum: 1 }, visitors: { $addToSet: '$visitorId' } } },
-      { $project: { _id: 1, views: 1, uniqueVisitors: { $size: '$visitors' } } },
+      { $group: { _id: '$pathname', views: { $sum: 1 } } },
       { $sort: { views: -1 } },
       { $limit: 8 }
     ])
@@ -154,16 +141,14 @@ export async function index(req, res) {
     active: 'analytics',
     scorecards: [
       { label: 'Events (7d)', value: totalEvents, helper: 'All tracked events' },
-      { label: 'Page views (7d)', value: pageViews, helper: 'Page view events only' },
-      { label: 'Unique visitors (7d)', value: uniqueVisitors.length, helper: 'Distinct visitor IDs' },
-      { label: 'Sessions (7d)', value: uniqueSessions.length, helper: 'Distinct session IDs' }
+      { label: 'Page views (7d)', value: pageViews, helper: 'Page view events only' }
     ],
     clickBreakdown: clicksByType.map((item) => ({
       label: item._id,
       count: item.count,
       percentage: toPct(item.count, clickTotal)
     })),
-    topPages: topPages.map((item) => ({ pathname: item._id, views: item.views, uniqueVisitors: item.uniqueVisitors })),
+    topPages: topPages.map((item) => ({ pathname: item._id, views: item.views })),
     topLinks: topLinks.map((item) => ({ href: item._id, count: item.count })),
     topButtons: topButtons.map((item) => ({ label: item._id, count: item.count })),
     eventTimeline,
