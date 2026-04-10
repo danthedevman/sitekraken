@@ -1,15 +1,18 @@
-import { marked } from 'marked';
 import { getCollections } from '../config/db.js';
 import {
-  buildKnowledgeMarkdown,
-  buildKnowledgeFilename
-} from '../services/markdownService.js';
+  buildKnowledgeHtmlDocument,
+  buildKnowledgeHtmlFilename,
+  sanitizeKnowledgeHtml,
+  extractImageUrlsFromHtml
+} from '../services/knowledgeHtmlService.js';
 import {
   uploadFileFromContent,
+  uploadBuffer,
   addFileToVectorStore,
   removeFileFromVectorStore,
   deleteOpenAIFile
 } from '../services/openaiService.js';
+import { uploadBufferToR2 } from '../services/r2Service.js';
 import { findOwnedWorkspace, trackRecentWorkspaceVisit } from '../services/workspaceService.js';
 import { serializeDoc, serializeDocs, toObjectId } from '../services/dbHelpers.js';
 import { buildWorkspaceTabs } from '../services/workspaceTabs.js';
@@ -21,47 +24,148 @@ async function getWorkspace(req) {
 }
 
 async function cleanupKnowledgeAssets(workspace, entry) {
-  if (entry?.vectorStoreFileId) {
+  const vectorFileIds = [
+    entry?.vectorStoreFileId,
+    ...(Array.isArray(entry?.vectorStoreImageFileIds)
+      ? entry.vectorStoreImageFileIds
+      : [])
+  ].filter(Boolean);
+
+  for (const vectorStoreFileId of vectorFileIds) {
     try {
-      await removeFileFromVectorStore(
-        workspace.openaiVectorStoreId,
-        entry.vectorStoreFileId
-      );
+      await removeFileFromVectorStore(workspace.openaiVectorStoreId, vectorStoreFileId);
     } catch (error) {
-      console.warn(
-        'Previous vector store file deletion failed:',
-        error.message
-      );
+      console.warn('Previous vector store file deletion failed:', error.message);
     }
   }
 
-  if (entry?.openaiFileId) {
+  const openaiFileIds = [
+    entry?.openaiFileId,
+    ...(Array.isArray(entry?.openaiImageFileIds) ? entry.openaiImageFileIds : [])
+  ].filter(Boolean);
+
+  for (const openaiFileId of openaiFileIds) {
     try {
-      await deleteOpenAIFile(entry.openaiFileId);
+      await deleteOpenAIFile(openaiFileId);
     } catch (error) {
       console.warn('Previous OpenAI file deletion failed:', error.message);
     }
   }
 }
 
+async function fetchImageBuffer(url) {
+  const r2PublicBase = String(process.env.CLOUDFLARE_R2_PUBLIC_URL || '').replace(/\/+$/, '');
+  if (!r2PublicBase) return null;
+
+  if (!String(url || '').startsWith(`${r2PublicBase}/`)) {
+    return null;
+  }
+
+  const response = await fetch(url);
+  if (!response.ok) return null;
+
+  const arrayBuffer = await response.arrayBuffer();
+  return {
+    buffer: Buffer.from(arrayBuffer),
+    mimeType: response.headers.get('content-type') || 'application/octet-stream'
+  };
+}
+
+async function uploadKnowledgeImagesToAssistant({ workspace, knowledgeId, bodyHtml }) {
+  const imageUrls = [...new Set(extractImageUrlsFromHtml(bodyHtml))];
+  if (!imageUrls.length) {
+    return {
+      openaiImageFileIds: [],
+      vectorStoreImageFileIds: []
+    };
+  }
+
+  const uploadedImageFileIds = [];
+  const vectorStoreImageFileIds = [];
+
+  for (const [index, imageUrl] of imageUrls.entries()) {
+    try {
+      const fileData = await fetchImageBuffer(imageUrl);
+      if (!fileData?.buffer?.length) continue;
+
+      const uploaded = await uploadBuffer(
+        fileData.buffer,
+        `knowledge-${knowledgeId}-image-${index + 1}`,
+        fileData.mimeType
+      );
+
+      uploadedImageFileIds.push(uploaded.id);
+
+      const vectorStoreFile = await addFileToVectorStore(
+        workspace.openaiVectorStoreId,
+        uploaded.id
+      );
+
+      if (vectorStoreFile?.id) {
+        vectorStoreImageFileIds.push(vectorStoreFile.id);
+      }
+    } catch (error) {
+      console.warn('Knowledge image assistant upload failed:', error.message);
+    }
+  }
+
+  return {
+    openaiImageFileIds: uploadedImageFileIds,
+    vectorStoreImageFileIds
+  };
+}
+
 async function publishKnowledgeEntry({ workspace, knowledgeId, title, body }) {
-  const markdown = buildKnowledgeMarkdown({ title, body });
-  const filename = buildKnowledgeFilename({
+  const htmlDocument = buildKnowledgeHtmlDocument({ title, bodyHtml: body });
+  const filename = buildKnowledgeHtmlFilename({
     title,
     workspaceId: workspace._id,
     knowledgeId
   });
 
-  const uploaded = await uploadFileFromContent(filename, markdown);
+  const uploaded = await uploadFileFromContent(filename, htmlDocument, 'text/html');
   const vectorStoreFile = await addFileToVectorStore(
     workspace.openaiVectorStoreId,
     uploaded.id
   );
 
+  const imageAssets = await uploadKnowledgeImagesToAssistant({
+    workspace,
+    knowledgeId,
+    bodyHtml: body
+  });
+
   return {
     openaiFileId: uploaded.id,
-    vectorStoreFileId: vectorStoreFile?.id || null
+    vectorStoreFileId: vectorStoreFile?.id || null,
+    openaiImageFileIds: imageAssets.openaiImageFileIds,
+    vectorStoreImageFileIds: imageAssets.vectorStoreImageFileIds
   };
+}
+
+export async function uploadKnowledgeImage(req, res) {
+  const workspace = await getWorkspace(req);
+
+  if (!workspace) {
+    return res.status(404).json({ error: 'Workspace not found' });
+  }
+
+  if (!req.file) {
+    return res.status(400).json({ error: 'No image uploaded' });
+  }
+
+  if (!String(req.file.mimetype || '').startsWith('image/')) {
+    return res.status(400).json({ error: 'Only image uploads are supported' });
+  }
+
+  const uploaded = await uploadBufferToR2({
+    fileBuffer: req.file.buffer,
+    mimeType: req.file.mimetype,
+    keyPrefix: `workspaces/${workspace._id}/knowledge-images`,
+    originalName: req.file.originalname
+  });
+
+  return res.json({ url: uploaded.url });
 }
 
 export async function index(req, res) {
@@ -112,13 +216,17 @@ export async function create(req, res) {
     return res.redirect('/workspaces');
   }
 
+  const safeBody = sanitizeKnowledgeHtml(body);
+
   const doc = {
     workspaceId: workspace._id,
     title: String(title || '').trim(),
-    body: String(body || '').trim(),
+    body: safeBody,
     status: actionType === 'publish' ? 'published' : 'draft',
     openaiFileId: null,
     vectorStoreFileId: null,
+    openaiImageFileIds: [],
+    vectorStoreImageFileIds: [],
     createdAt: now,
     updatedAt: now
   };
@@ -140,6 +248,8 @@ export async function create(req, res) {
         $set: {
           openaiFileId: publishedAssets.openaiFileId,
           vectorStoreFileId: publishedAssets.vectorStoreFileId,
+          openaiImageFileIds: publishedAssets.openaiImageFileIds,
+          vectorStoreImageFileIds: publishedAssets.vectorStoreImageFileIds,
           updatedAt: new Date()
         }
       }
@@ -176,8 +286,7 @@ export async function show(req, res) {
     workspace,
     active: 'chatbot',
     tabs: buildWorkspaceTabs(workspace._id),
-    entry: serializeDoc(entry),
-    html: marked(entry.body)
+    entry: serializeDoc(entry)
   });
 }
 
@@ -230,7 +339,7 @@ export async function update(req, res) {
 
   const updateDoc = {
     title: String(title || '').trim(),
-    body: String(body || '').trim(),
+    body: sanitizeKnowledgeHtml(body),
     updatedAt: new Date()
   };
 
@@ -248,14 +357,13 @@ export async function update(req, res) {
 
     updateDoc.openaiFileId = publishedAssets.openaiFileId;
     updateDoc.vectorStoreFileId = publishedAssets.vectorStoreFileId;
+    updateDoc.openaiImageFileIds = publishedAssets.openaiImageFileIds;
+    updateDoc.vectorStoreImageFileIds = publishedAssets.vectorStoreImageFileIds;
   } else if (actionType === 'draft') {
     updateDoc.status = 'draft';
   }
 
-  await knowledgeEntries.updateOne(
-    { _id: entry._id },
-    { $set: updateDoc }
-  );
+  await knowledgeEntries.updateOne({ _id: entry._id }, { $set: updateDoc });
 
   req.flash('success', 'Knowledge updated');
   res.redirect(`/workspaces/${workspace._id}/chatbot/knowledge`);

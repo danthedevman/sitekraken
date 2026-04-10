@@ -2,14 +2,15 @@
 <div class="card">
   <div class="card-body">
     <h1 class="h4 mb-3">New knowledge entry</h1>
-    <form method="POST" action="/workspaces/<%= workspace._id %>/chatbot/knowledge">
+    <form id="knowledge-create-form" method="POST" action="/workspaces/<%= workspace._id %>/chatbot/knowledge">
       <div class="mb-3">
         <label class="form-label">Title</label>
         <input name="title" class="form-control" required />
       </div>
       <div class="mb-3">
         <label class="form-label">Body</label>
-        <textarea id="markdown-editor" name="body" class="form-control" rows="12"></textarea>
+        <div id="wysiwyg-editor" style="min-height: 280px;"></div>
+        <input type="hidden" id="knowledge-body" name="body" />
       </div>
       <div class="d-flex gap-2">
         <button name="actionType" value="draft" class="btn btn-outline-secondary">Save Draft</button>
@@ -20,9 +21,66 @@
 </div>
 
 <script>
-  (() => {
-   window.onload = ()=>{
-     new SimpleMDE({ element: document.getElementById('markdown-editor'),hideIcons:["guide","image"] });
-   }
-  })()
+  window.addEventListener('load', () => {
+    const form = document.getElementById('knowledge-create-form');
+    const bodyInput = document.getElementById('knowledge-body');
+    const toolbarOptions = [
+      [{ header: [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ list: 'ordered' }, { list: 'bullet' }],
+      ['blockquote', 'code-block'],
+      ['link', 'image'],
+      [{ align: [] }],
+      ['clean']
+    ];
+
+    const quill = new Quill('#wysiwyg-editor', {
+      theme: 'snow',
+      modules: {
+        toolbar: {
+          container: toolbarOptions,
+          handlers: {
+            image: imageHandler
+          }
+        }
+      }
+    });
+
+    async function imageHandler() {
+      const input = document.createElement('input');
+      input.setAttribute('type', 'file');
+      input.setAttribute('accept', 'image/*');
+      input.click();
+
+      input.onchange = async () => {
+        const file = input.files?.[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        try {
+          const response = await fetch('/workspaces/<%= workspace._id %>/chatbot/knowledge/uploads/image', {
+            method: 'POST',
+            body: formData
+          });
+
+          const payload = await response.json();
+          if (!response.ok || !payload?.url) {
+            throw new Error(payload?.error || 'Upload failed');
+          }
+
+          const range = quill.getSelection(true);
+          quill.insertEmbed(range.index, 'image', payload.url, 'user');
+          quill.setSelection(range.index + 1);
+        } catch (error) {
+          alert(`Image upload failed: ${error.message}`);
+        }
+      };
+    }
+
+    form.addEventListener('submit', () => {
+      bodyInput.value = quill.root.innerHTML;
+    });
+  });
 </script>

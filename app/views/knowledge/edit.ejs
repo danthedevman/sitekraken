@@ -15,7 +15,8 @@
 
       <div class="mb-3">
         <label class="form-label">Body</label>
-        <textarea id="markdown-editor" name="body" class="form-control" rows="12"><%= entry.body %></textarea>
+        <div id="wysiwyg-editor" style="min-height: 280px;"></div>
+        <input type="hidden" id="knowledge-body" name="body" />
       </div>
     </form>
 
@@ -37,12 +38,68 @@
 </div>
 
 <script>
-  (() => {
-    window.onload = () => {
-      new SimpleMDE({
-        element: document.getElementById('markdown-editor'),
-        hideIcons: ['guide', 'image']
-      });
-    };
-  })();
+  window.addEventListener('load', () => {
+    const form = document.getElementById('knowledge-edit-form');
+    const bodyInput = document.getElementById('knowledge-body');
+    const toolbarOptions = [
+      [{ header: [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ list: 'ordered' }, { list: 'bullet' }],
+      ['blockquote', 'code-block'],
+      ['link', 'image'],
+      [{ align: [] }],
+      ['clean']
+    ];
+
+    const quill = new Quill('#wysiwyg-editor', {
+      theme: 'snow',
+      modules: {
+        toolbar: {
+          container: toolbarOptions,
+          handlers: {
+            image: imageHandler
+          }
+        }
+      }
+    });
+
+    quill.root.innerHTML = <%- JSON.stringify(entry.body || '') %>;
+
+    async function imageHandler() {
+      const input = document.createElement('input');
+      input.setAttribute('type', 'file');
+      input.setAttribute('accept', 'image/*');
+      input.click();
+
+      input.onchange = async () => {
+        const file = input.files?.[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        try {
+          const response = await fetch('/workspaces/<%= workspace._id %>/chatbot/knowledge/uploads/image', {
+            method: 'POST',
+            body: formData
+          });
+
+          const payload = await response.json();
+          if (!response.ok || !payload?.url) {
+            throw new Error(payload?.error || 'Upload failed');
+          }
+
+          const range = quill.getSelection(true);
+          quill.insertEmbed(range.index, 'image', payload.url, 'user');
+          quill.setSelection(range.index + 1);
+        } catch (error) {
+          alert(`Image upload failed: ${error.message}`);
+        }
+      };
+    }
+
+    form.addEventListener('submit', () => {
+      bodyInput.value = quill.root.innerHTML;
+    });
+  });
 </script>
