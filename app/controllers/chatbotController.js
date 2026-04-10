@@ -1,6 +1,4 @@
 import { ObjectId } from 'mongodb';
-import crypto from 'node:crypto';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 import { getCollections, getDB } from '../config/db.js';
 import {
@@ -11,15 +9,7 @@ import {
 import { findOwnedWorkspace, trackRecentWorkspaceVisit } from '../services/workspaceService.js';
 import { serializeDoc } from '../services/dbHelpers.js';
 import { buildWorkspaceTabs } from '../services/workspaceTabs.js';
-
-const r2 = new S3Client({
-  region: 'auto',
-  endpoint: process.env.CLOUDFLARE_R2_ENDPOINT,
-  credentials: {
-    accessKeyId: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID,
-    secretAccessKey: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY
-  }
-});
+import { uploadBufferToR2 } from '../services/r2Service.js';
 
 async function getWorkspace(req) {
   const workspace = await findOwnedWorkspace(req.user._id, req.params.workspaceId);
@@ -126,37 +116,6 @@ function formatDateTime(value) {
   if (Number.isNaN(date.getTime())) return '';
 
   return date.toLocaleString();
-}
-
-async function uploadLogoToR2({ fileBuffer, mimeType, workspaceId, originalName }) {
-  if (!fileBuffer?.length) return null;
-
-  const ext =
-    String(originalName || '').split('.').pop()?.toLowerCase() || 'bin';
-
-  const key = `workspaces/${workspaceId}/chatbot-logos/${Date.now()}-${crypto
-    .randomBytes(8)
-    .toString('hex')}.${ext}`;
-
-  await r2.send(
-    new PutObjectCommand({
-      Bucket: process.env.CLOUDFLARE_R2_BUCKET,
-      Key: key,
-      Body: fileBuffer,
-      ContentType: mimeType || 'application/octet-stream'
-    })
-  );
-
-  const publicBase = String(process.env.CLOUDFLARE_R2_PUBLIC_URL || '').replace(
-    /\/+$/,
-    ''
-  );
-
-  if (!publicBase) {
-    throw new Error('Missing CLOUDFLARE_R2_PUBLIC_URL');
-  }
-
-  return `${publicBase}/${key}`;
 }
 
 export async function index(req, res) {
@@ -352,12 +311,14 @@ export async function update(req, res) {
     }
 
     if (req.file?.buffer?.length) {
-      logoUrl = await uploadLogoToR2({
+      const uploaded = await uploadBufferToR2({
         fileBuffer: req.file.buffer,
         mimeType: req.file.mimetype,
-        workspaceId: String(workspace._id),
+        keyPrefix: `workspaces/${workspace._id}/chatbot-logos`,
         originalName: req.file.originalname
       });
+
+      logoUrl = uploaded.url;
     }
   } catch (error) {
     req.flash('error', `Logo upload failed: ${error.message}`);
