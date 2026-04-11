@@ -35,6 +35,16 @@ function normalizeKnowledgeIds(value) {
   )];
 }
 
+function parsePositiveInt(value, fallback) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
+  return parsed;
+}
+
+function escapeRegExp(value) {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 async function cleanupKnowledgeAssets(workspace, entry) {
   const vectorFileIds = [
     entry?.vectorStoreFileId,
@@ -189,16 +199,59 @@ export async function index(req, res) {
     return res.redirect('/workspaces');
   }
 
+  const pageSize = parsePositiveInt(req.query.pageSize, 20);
+  const page = parsePositiveInt(req.query.page, 1);
+  const search = String(req.query.search || '').trim();
+  const sort = String(req.query.sort || 'updatedAt').trim();
+  const direction = String(req.query.direction || 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
+  const sortDirection = direction === 'asc' ? 1 : -1;
+  const sortConfig = {
+    title: { title: sortDirection, updatedAt: -1 },
+    status: { status: sortDirection, updatedAt: -1 },
+    openaiFileId: { openaiFileId: sortDirection, updatedAt: -1 },
+    updatedAt: { updatedAt: sortDirection, createdAt: sortDirection }
+  };
+  const sortKey = Object.prototype.hasOwnProperty.call(sortConfig, sort) ? sort : 'updatedAt';
+
+  const query = { workspaceId: workspace._id };
+
+  if (search) {
+    const escapedSearch = escapeRegExp(search);
+    const searchRegex = new RegExp(escapedSearch, 'i');
+
+    query.$or = [
+      { title: { $regex: searchRegex } },
+      { status: { $regex: searchRegex } },
+      { openaiFileId: { $regex: searchRegex } }
+    ];
+  }
+
+  const totalRows = await knowledgeEntries.countDocuments(query);
+  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const skip = (currentPage - 1) * pageSize;
+
   const docs = await knowledgeEntries
-    .find({ workspaceId: workspace._id })
-    .sort({ createdAt: -1 })
+    .find(query)
+    .sort(sortConfig[sortKey])
+    .skip(skip)
+    .limit(pageSize)
     .toArray();
 
   res.render('knowledge/index', {
     workspace,
     active: 'chatbot',
     tabLinks: buildChatbotTabLinks(workspace._id),
-    entries: serializeDocs(docs)
+    entries: serializeDocs(docs),
+    tableState: {
+      search,
+      sort: sortKey,
+      direction,
+      page: currentPage,
+      pageSize,
+      totalRows,
+      totalPages
+    }
   });
 }
 

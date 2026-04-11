@@ -9,9 +9,10 @@
 
 <%
   const columns = [
-    { key: 'title', label: 'Title' },
-    { key: 'status', label: 'Status' },
-    { key: 'openaiFileId', label: 'OpenAI File' },
+    { key: 'title', label: 'Title', sortType: 'string' },
+    { key: 'status', label: 'Status', sortType: 'string' },
+    { key: 'openaiFileId', label: 'OpenAI File', sortType: 'string' },
+    { key: 'updatedAt', label: 'Updated', sortType: 'date' },
     { key: 'actions', label: '', sortable: false }
   ];
 
@@ -21,12 +22,14 @@
       id: entry._id,
       title: entry.title || '',
       status: entry.status || 'draft',
-      openaiFileId: entry.openaiFileId || ''
+      openaiFileId: entry.openaiFileId || '',
+      updatedAt: entry.updatedAt || entry.createdAt || ''
     },
     cells: {
       title: entry.title || '<span class="text-muted">(untitled)</span>',
       status: `<span class="badge bg-${entry.status === 'published' ? 'success' : 'secondary'}">${entry.status || 'draft'}</span>`,
       openaiFileId: `<code>${entry.openaiFileId || '-'}</code>`,
+      updatedAt: entry.updatedAt ? new Date(entry.updatedAt).toLocaleString() : '<span class="text-muted">—</span>',
       actions: `
         <div class="d-inline-flex gap-2">
           <a href="/workspaces/${workspace._id}/chatbot/knowledge/${entry._id}" class="btn btn-sm btn-outline-primary">View</a>
@@ -45,6 +48,16 @@
   columns,
   rows,
   defaultPageSize: 20,
+  serverPagination: {
+    page: tableState.page,
+    pageSize: tableState.pageSize,
+    totalRows: tableState.totalRows,
+    totalPages: tableState.totalPages,
+    search: tableState.search,
+    sort: tableState.sort,
+    direction: tableState.direction,
+    queryParamPrefix: ''
+  },
   selectableRows: true,
   selectionValueKey: 'id',
   bulkActions: {
