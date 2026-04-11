@@ -7,11 +7,9 @@ import {
 import openaiClient, { createVectorStore, deleteOpenAIFile } from '../services/openaiService.js';
 import {
   addWorkspaceMemberByEmail,
-  findOwnedWorkspace,
   listOwnedWorkspaces,
   listWorkspaceMembers,
   removeWorkspaceMember,
-  trackRecentWorkspaceVisit,
   updateWorkspaceMemberRole
 } from '../services/workspaceService.js';
 import { toObjectId } from '../services/dbHelpers.js';
@@ -162,27 +160,23 @@ export async function create(req, res) {
 }
 
 export async function show(req, res) {
-  const workspace = await findOwnedWorkspace(req.user._id, req.params.id);
+  const workspace = req.workspace;
 
   if (!workspace) {
     req.flash('error', 'Workspace not found');
     return res.redirect('/workspaces');
   }
 
-  trackRecentWorkspaceVisit(req, workspace);
-
-  res.render('workspaces/show', { workspace, active: 'overview' });
+  return res.redirect(`/workspaces/${workspace._id}/analytics`);
 }
 
 export async function settingsForm(req, res) {
-  const workspace = await findOwnedWorkspace(req.user._id, req.params.id);
+  const workspace = req.workspace;
 
   if (!workspace) {
     req.flash('error', 'Workspace not found');
     return res.redirect('/workspaces');
   }
-
-  trackRecentWorkspaceVisit(req, workspace);
 
   const members = await listWorkspaceMembers(workspace);
 
@@ -198,7 +192,7 @@ export async function settingsForm(req, res) {
 
 export async function updateSettings(req, res) {
   const { workspaces } = getCollections();
-  const workspace = await findOwnedWorkspace(req.user._id, req.params.id);
+  const workspace = req.workspace;
 
   if (!workspace) {
     req.flash('error', 'Workspace not found');
@@ -231,7 +225,7 @@ export async function updateSettings(req, res) {
 }
 
 export async function createMember(req, res) {
-  const workspace = await findOwnedWorkspace(req.user._id, req.params.id);
+  const workspace = req.workspace;
   if (!workspace) {
     req.flash('error', 'Workspace not found');
     return res.redirect('/workspaces');
@@ -248,7 +242,7 @@ export async function createMember(req, res) {
 }
 
 export async function updateMember(req, res) {
-  const workspace = await findOwnedWorkspace(req.user._id, req.params.id);
+  const workspace = req.workspace;
   if (!workspace) {
     req.flash('error', 'Workspace not found');
     return res.redirect('/workspaces');
@@ -265,7 +259,7 @@ export async function updateMember(req, res) {
 }
 
 export async function destroyMember(req, res) {
-  const workspace = await findOwnedWorkspace(req.user._id, req.params.id);
+  const workspace = req.workspace;
   if (!workspace) {
     req.flash('error', 'Workspace not found');
     return res.redirect('/workspaces');
@@ -288,7 +282,7 @@ export async function destroyMember(req, res) {
 
 export async function destroy(req, res) {
   const { workspaces, workspaceFiles, knowledgeEntries, chatbotConfigs } = getCollections();
-  const workspace = await findOwnedWorkspace(req.user._id, req.params.id);
+  const workspace = req.workspace;
 
   if (!workspace) {
     req.flash('error', 'Workspace not found');

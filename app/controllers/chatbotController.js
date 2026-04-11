@@ -6,15 +6,8 @@ import {
   ensureWorkspaceChatbotDefaults,
   normalizeAllowedDomainsInput
 } from '../models/defaults.js';
-import { findOwnedWorkspace, trackRecentWorkspaceVisit } from '../services/workspaceService.js';
 import { serializeDoc } from '../services/dbHelpers.js';
 import { uploadBufferToR2 } from '../services/r2Service.js';
-
-async function getWorkspace(req) {
-  const workspace = await findOwnedWorkspace(req.user._id, req.params.workspaceId);
-  trackRecentWorkspaceVisit(req, workspace);
-  return workspace;
-}
 
 function parseLines(value) {
   return String(value || '')
@@ -138,7 +131,7 @@ function buildChatbotTabLinks(workspaceId) {
 
 export async function index(req, res) {
   const { workspaces } = getCollections();
-  const workspace = await getWorkspace(req);
+  const workspace = req.workspace;
 
   if (!workspace) {
     req.flash('error', 'Workspace not found');
@@ -193,7 +186,7 @@ export async function index(req, res) {
 
 
 export async function interactions(req, res) {
-  const workspace = await getWorkspace(req);
+  const workspace = req.workspace;
 
   if (!workspace) {
     req.flash('error', 'Workspace not found');
@@ -339,7 +332,7 @@ export async function interactions(req, res) {
 }
 
 export async function showInteraction(req, res) {
-  const workspace = await getWorkspace(req);
+  const workspace = req.workspace;
 
   if (!workspace) {
     req.flash('error', 'Workspace not found');
@@ -393,7 +386,7 @@ export async function showInteraction(req, res) {
 
 export async function update(req, res) {
   const { workspaces } = getCollections();
-  const workspace = await getWorkspace(req);
+  const workspace = req.workspace;
 
   if (!workspace) {
     req.flash('error', 'Workspace not found');
@@ -525,7 +518,7 @@ export async function update(req, res) {
 
 export async function regenerateApiKey(req, res) {
   const { workspaces } = getCollections();
-  const workspace = await getWorkspace(req);
+  const workspace = req.workspace;
 
   if (!workspace) {
     req.flash('error', 'Workspace not found');
