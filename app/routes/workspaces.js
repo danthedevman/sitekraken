@@ -15,7 +15,9 @@ import {
 
 const router = Router();
 
-router.get('/', ensureAuth, index);
+router.get('/', ensureAuth, (req,res)=>{
+  res.redirect("/analytics");
+});
 router.get('/new', ensureAuth, newForm);
 router.post('/', ensureAuth, create);
 router.get('/:id', ensureAuth, show);

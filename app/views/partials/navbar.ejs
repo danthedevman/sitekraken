@@ -1,7 +1,7 @@
 <%
   const hasWorkspaceContext = typeof workspace !== 'undefined' && workspace;
   const isWorkspacesIndex = currentPath === '/workspaces';
-  const containerClass = isWorkspacesIndex || hasWorkspaceContext ? 'container-fluid px-4' : 'container';
+  const containerClass = isWorkspacesIndex || hasWorkspaceContext ? 'container-fluid px-2' : 'container';
 %>
 
 <nav class="navbar navbar-expand-lg bg-body-tertiary<%= hasWorkspaceContext ? ' with-sidebar' : '' %>">
@@ -20,7 +20,7 @@
       <% } else { %>
         <div class="dropdown">
           <button
-            class="btn btn-outline-secondary btn-sm dropdown-toggle"
+            class="btn btn-outline-secondary d-flex align-items-center btn-sm dropdown-toggle"
             type="button"
             data-bs-toggle="dropdown"
             aria-expanded="false"
