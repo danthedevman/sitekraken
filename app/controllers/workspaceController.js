@@ -156,7 +156,7 @@ export async function create(req, res) {
   const workspaceId = result.insertedId.toString();
 
   req.flash('success', 'Workspace created');
-  res.redirect(`/workspaces/${workspaceId}`);
+  res.redirect(`/workspaces/${workspaceId}/analytics`);
 }
 
 export async function show(req, res) {
@@ -167,7 +167,7 @@ export async function show(req, res) {
     return res.redirect('/workspaces');
   }
 
-  return res.redirect(`/workspaces/${workspace._id}/analytics`);
+  return res.redirect(`/workspaces/${req.params.id}/analytics`);
 }
 
 export async function settingsForm(req, res) {

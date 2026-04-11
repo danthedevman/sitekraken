@@ -12,6 +12,7 @@ import MongoStore from 'connect-mongo';
 import { connectDB } from './config/db.js';
 import configurePassport from './config/passport.js';
 import addLocals from './middleware/locals.js';
+import { ensureAuth } from './middleware/auth.js';
 
 import indexRoutes from './routes/index.js';
 import authRoutes from './routes/auth.js';
@@ -67,9 +68,9 @@ async function startServer() {
   app.use('/auth', authRoutes);
   app.use('/', indexRoutes);
   app.use('/workspaces', workspaceRoutes);
-  app.use('/workspaces/:workspaceId/chatbot', loadWorkspace('workspaceId'), chatbotRoutes);
-  app.use('/workspaces/:workspaceId/analytics', loadWorkspace('workspaceId'), analyticsRoutes);
-  app.use('/workspaces/:workspaceId/logs', loadWorkspace('workspaceId'), logsRoutes);
+  app.use('/workspaces/:workspaceId/chatbot', ensureAuth, loadWorkspace('workspaceId'), chatbotRoutes);
+  app.use('/workspaces/:workspaceId/analytics', ensureAuth, loadWorkspace('workspaceId'), analyticsRoutes);
+  app.use('/workspaces/:workspaceId/logs', ensureAuth, loadWorkspace('workspaceId'), logsRoutes);
 
   app.use((req, res) => {
     res.status(301).redirect('/workspaces');
