@@ -19,9 +19,6 @@
     <div class="app-sidebar-body flex-grow-1 overflow-auto">
       <div class="sidebar-section py-1">
         <div class="subheader small text-uppercase text-secondary fw-semibold">Workspace</div>
-        <a href="/workspaces/<%= workspace._id %>" class="nav-link app-side-link<%= active === 'overview' ? ' active' : '' %>">
-          <i class="bi bi-grid-1x2 app-side-link-icon"></i><span class="app-side-link-text">Overview</span>
-        </a>
         <a href="/workspaces/<%= workspace._id %>/settings" class="nav-link app-side-link<%= active === 'settings' ? ' active' : '' %>">
           <i class="bi bi-sliders app-side-link-icon"></i><span class="app-side-link-text">Settings</span>
         </a>
