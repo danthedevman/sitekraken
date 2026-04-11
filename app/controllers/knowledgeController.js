@@ -15,14 +15,7 @@ import {
   deleteOpenAIFile
 } from '../services/openaiService.js';
 import { uploadBufferToR2 } from '../services/r2Service.js';
-import { findOwnedWorkspace, trackRecentWorkspaceVisit } from '../services/workspaceService.js';
 import { serializeDoc, serializeDocs, toObjectId } from '../services/dbHelpers.js';
-
-async function getWorkspace(req) {
-  const workspace = await findOwnedWorkspace(req.user._id, req.params.workspaceId);
-  trackRecentWorkspaceVisit(req, workspace);
-  return workspace;
-}
 
 function buildChatbotTabLinks(workspaceId) {
   return [
@@ -163,7 +156,7 @@ async function publishKnowledgeEntry({ workspace, knowledgeId, title, body }) {
 }
 
 export async function uploadKnowledgeImage(req, res) {
-  const workspace = await getWorkspace(req);
+  const workspace = req.workspace;
 
   if (!workspace) {
     return res.status(404).json({ error: 'Workspace not found' });
@@ -189,7 +182,7 @@ export async function uploadKnowledgeImage(req, res) {
 
 export async function index(req, res) {
   const { knowledgeEntries } = getCollections();
-  const workspace = await getWorkspace(req);
+  const workspace = req.workspace;
 
   if (!workspace) {
     req.flash('error', 'Workspace not found');
@@ -210,7 +203,7 @@ export async function index(req, res) {
 }
 
 export async function newForm(req, res) {
-  const workspace = await getWorkspace(req);
+  const workspace = req.workspace;
 
   if (!workspace) {
     req.flash('error', 'Workspace not found');
@@ -226,7 +219,7 @@ export async function newForm(req, res) {
 
 export async function create(req, res) {
   const { knowledgeEntries } = getCollections();
-  const workspace = await getWorkspace(req);
+  const workspace = req.workspace;
   const { title, body, actionType } = req.body;
   const now = new Date();
 
@@ -284,7 +277,7 @@ export async function create(req, res) {
 
 export async function show(req, res) {
   const { knowledgeEntries } = getCollections();
-  const workspace = await getWorkspace(req);
+  const workspace = req.workspace;
 
   if (!workspace) {
     req.flash('error', 'Workspace not found');
@@ -311,7 +304,7 @@ export async function show(req, res) {
 
 export async function editForm(req, res) {
   const { knowledgeEntries } = getCollections();
-  const workspace = await getWorkspace(req);
+  const workspace = req.workspace;
 
   if (!workspace) {
     req.flash('error', 'Workspace not found');
@@ -338,7 +331,7 @@ export async function editForm(req, res) {
 
 export async function update(req, res) {
   const { knowledgeEntries } = getCollections();
-  const workspace = await getWorkspace(req);
+  const workspace = req.workspace;
   const { title, body, actionType } = req.body;
 
   if (!workspace) {
@@ -390,7 +383,7 @@ export async function update(req, res) {
 
 export async function destroy(req, res) {
   const { knowledgeEntries } = getCollections();
-  const workspace = await getWorkspace(req);
+  const workspace = req.workspace;
 
   if (!workspace) {
     req.flash('error', 'Workspace not found');
@@ -416,7 +409,7 @@ export async function destroy(req, res) {
 
 export async function bulkDestroy(req, res) {
   const { knowledgeEntries } = getCollections();
-  const workspace = await getWorkspace(req);
+  const workspace = req.workspace;
 
   if (!workspace) {
     req.flash('error', 'Workspace not found');

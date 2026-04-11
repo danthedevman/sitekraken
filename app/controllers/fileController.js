@@ -8,7 +8,6 @@ import {
   removeFileFromVectorStore,
   deleteOpenAIFile
 } from '../services/openaiService.js';
-import { findOwnedWorkspace, trackRecentWorkspaceVisit } from '../services/workspaceService.js';
 import { serializeDocs, toObjectId } from '../services/dbHelpers.js';
 
 const storage = multer.memoryStorage();
@@ -28,12 +27,6 @@ export const upload = multer({
     fileSize: 25 * 1024 * 1024
   }
 });
-
-async function getWorkspace(req) {
-  const workspace = await findOwnedWorkspace(req.user._id, req.params.workspaceId);
-  trackRecentWorkspaceVisit(req, workspace);
-  return workspace;
-}
 
 function wantsJson(req) {
   return req.xhr || req.get('x-requested-with') === 'XMLHttpRequest';
@@ -93,7 +86,7 @@ async function deleteFromR2(r2Key) {
 
 export async function index(req, res) {
   const { workspaceFiles } = getCollections();
-  const workspace = await getWorkspace(req);
+  const workspace = req.workspace;
 
   if (!workspace) {
     req.flash('error', 'Workspace not found');
@@ -115,7 +108,7 @@ export async function index(req, res) {
 
 export async function create(req, res) {
   const { workspaceFiles } = getCollections();
-  const workspace = await getWorkspace(req);
+  const workspace = req.workspace;
 
   if (!workspace) {
     if (wantsJson(req)) {
@@ -211,7 +204,7 @@ export async function create(req, res) {
 
 export async function destroy(req, res) {
   const { workspaceFiles } = getCollections();
-  const workspace = await getWorkspace(req);
+  const workspace = req.workspace;
 
   if (!workspace) {
     req.flash('error', 'Workspace not found');

@@ -2,7 +2,6 @@ import { ObjectId } from 'mongodb';
 
 import { getCollections, getDB } from '../config/db.js';
 import { ensureWorkspaceChatbotDefaults } from '../models/defaults.js';
-import { findOwnedWorkspace, trackRecentWorkspaceVisit } from '../services/workspaceService.js';
 import { serializeDoc } from '../services/dbHelpers.js';
 
 function toPct(part, total) {
@@ -10,10 +9,10 @@ function toPct(part, total) {
   return Math.round((part / total) * 1000) / 10;
 }
 
-async function getWorkspace(req) {
+async function hydrateWorkspace(req) {
   const { workspaces } = getCollections();
-  const workspace = await findOwnedWorkspace(req.user._id, req.params.workspaceId);
-  trackRecentWorkspaceVisit(req, workspace);
+  const workspace = req.workspace;
+  if (!workspace) return null;
 
   const hydratedWorkspace = ensureWorkspaceChatbotDefaults(workspace);
 
@@ -37,7 +36,11 @@ async function getWorkspace(req) {
 }
 
 export async function index(req, res) {
-  const workspace = await getWorkspace(req);
+  const workspace = await hydrateWorkspace(req);
+  if (!workspace) {
+    req.flash('error', 'Workspace not found');
+    return res.redirect('/workspaces');
+  }
 
   const db = getDB();
   const collection = db.collection('website_analytics_events');
@@ -158,7 +161,11 @@ export async function index(req, res) {
 
 export async function toggleEnabled(req, res) {
   const { workspaces } = getCollections();
-  const workspace = await getWorkspace(req);
+  const workspace = await hydrateWorkspace(req);
+  if (!workspace) {
+    req.flash('error', 'Workspace not found');
+    return res.redirect('/workspaces');
+  }
   const shouldEnable = String(req.body.enabled) === 'true';
 
   await workspaces.updateOne(
