@@ -5,7 +5,7 @@ import { ensureAuth } from '../middleware/auth.js';
 const router = Router();
 
 router.get('/', ensureAuth,  (req,res)=>{
-    return res.redirect("/workspaces")
+    return res.redirect("/analytics")
 });
 
 export default router;

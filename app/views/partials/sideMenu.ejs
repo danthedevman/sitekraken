@@ -1,6 +1,6 @@
 <aside class="app-sidebar d-none d-md-flex flex-column" id="workspace-sidebar">
   <div class="app-sidebar-inner d-flex flex-column h-100">
-    <div class="sidebar-header d-flex align-items-center justify-content-between px-2 pt-2 pb-2">
+    <div class="sidebar-header d-flex align-items-center justify-content-between px-2 pt-2 pb-2 mb-2">
       <a class="sidebar-logo d-flex align-items-center gap-2 text-decoration-none" href="/workspaces">
         <span class="sidebar-logo-mark"><i class="bi bi-hurricane"></i></span>
         <span class="sidebar-logo-text fw-bold">SiteKraken</span>
@@ -17,16 +17,7 @@
     </div>
 
     <div class="app-sidebar-body flex-grow-1 overflow-auto">
-      <div class="sidebar-section py-1">
-        <div class="subheader small text-uppercase text-secondary fw-semibold">Workspace</div>
-        <a href="/workspaces/<%= workspace._id %>/settings" class="nav-link app-side-link<%= active === 'settings' ? ' active' : '' %>">
-          <i class="bi bi-sliders app-side-link-icon"></i><span class="app-side-link-text">Settings</span>
-        </a>
-      </div>
-
       <nav class="nav flex-column px-0 pb-3">
-        <hr class="border my-1"/>
-        <div class="subheader small text-uppercase text-secondary fw-semibold">Modules</div>
         <a href="/workspaces/<%= workspace._id %>/analytics" class="nav-link app-side-link<%= active === 'analytics' ? ' active' : '' %>">
           <i class="bi bi-graph-up-arrow app-side-link-icon"></i><span class="app-side-link-text">Analytics</span>
         </a>
@@ -64,7 +55,8 @@
             <span class="bi bi-chevron-up sidebar-expand-icon"></span>
           </button>
           <ul class="dropdown-menu w-100 shadow-sm mb-2">
-            <li><a class="dropdown-item" href="/auth/profile">Profile settings</a></li>
+            <li><a class="dropdown-item" href="/auth/profile">Profile</a></li>
+            <li><a href="/workspaces/<%= workspace._id %>/settings">Settings</a></li>
             <li><hr class="dropdown-divider" /></li>
             <li>
               <form action="/auth/logout" method="POST">
