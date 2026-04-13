@@ -146,6 +146,7 @@ export async function index(req, res) {
     !workspace.analytics ||
     !workspace.logs ||
     !workspace.banners ||
+    !workspace.feedback ||
     !Array.isArray(workspace.allowedDomains)
   ) {
     await workspaces.updateOne(
@@ -158,6 +159,7 @@ export async function index(req, res) {
           analytics: hydratedWorkspace.analytics,
           logs: hydratedWorkspace.logs,
           banners: hydratedWorkspace.banners,
+          feedback: hydratedWorkspace.feedback,
           updatedAt: new Date()
         }
       }

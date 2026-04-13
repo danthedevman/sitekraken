@@ -149,6 +149,7 @@ export async function create(req, res) {
     analytics: chatbotDefaults.analytics,
     logs: chatbotDefaults.logs,
     banners: chatbotDefaults.banners,
+    feedback: chatbotDefaults.feedback,
     createdAt: new Date(),
     updatedAt: new Date()
   };

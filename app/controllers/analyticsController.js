@@ -81,7 +81,7 @@ async function hydrateWorkspace(req) {
 
   const hydratedWorkspace = ensureWorkspaceChatbotDefaults(workspace);
 
-  if (!workspace.analytics || !workspace.logs || !workspace.chatbot || !workspace.apiKey) {
+  if (!workspace.analytics || !workspace.logs || !workspace.chatbot || !workspace.feedback || !workspace.apiKey) {
     await workspaces.updateOne(
       { _id: new ObjectId(workspace._id) },
       {
@@ -91,6 +91,7 @@ async function hydrateWorkspace(req) {
           analytics: hydratedWorkspace.analytics,
           logs: hydratedWorkspace.logs,
           banners: hydratedWorkspace.banners,
+          feedback: hydratedWorkspace.feedback,
           allowedDomains: hydratedWorkspace.allowedDomains,
           updatedAt: new Date(),
         },
