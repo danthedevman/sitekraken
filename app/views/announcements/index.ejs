@@ -1,8 +1,14 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h4 class="m-0">Banners</h4>
-  <span class="badge <%= banners?.enabled ? 'text-bg-success' : 'text-bg-secondary' %>">
-    <%= banners?.enabled ? 'Enabled' : 'Disabled' %>
-  </span>
+  <div>
+    <h4 class="m-0">Banners</h4>
+    <div class="text-muted small">Manage announcement banners for <%= workspace.name %>.</div>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    <span class="badge <%= banners?.enabled ? 'text-bg-success' : 'text-bg-secondary' %>">
+      <%= banners?.enabled ? 'Enabled' : 'Disabled' %>
+    </span>
+    <a class="btn btn-primary btn-sm" href="/workspaces/<%= workspace._id %>/announcements/new">New banner</a>
+  </div>
 </div>
 
 <div class="card mb-3">
@@ -20,171 +26,54 @@
   </div>
 </div>
 
-<div class="card mb-3">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <strong><%= selected ? 'Edit banner' : 'Create banner' %></strong>
-    <% if (selected) { %>
-      <a class="btn btn-sm btn-outline-secondary" href="/workspaces/<%= workspace._id %>/announcements">Create new</a>
-    <% } %>
-  </div>
-  <div class="card-body">
-    <form method="POST" action="/workspaces/<%= workspace._id %>/announcements" class="row g-3">
-      <input type="hidden" name="intent" value="<%= selected ? 'update' : 'create' %>" />
-      <input type="hidden" name="bannerId" value="<%= selected?.id || '' %>" />
-      <input type="hidden" name="enabled" value="<%= banners?.enabled ? 'true' : 'false' %>" />
+<%
+  const columns = [
+    { key: 'title', label: 'Title' },
+    { key: 'message', label: 'Message' },
+    { key: 'status', label: 'Status' },
+    { key: 'type', label: 'Type' },
+    { key: 'schedule', label: 'Schedule' },
+    { key: 'actions', label: '', sortable: false }
+  ];
 
-      <div class="col-12 col-md-4">
-        <label for="status" class="form-label">Publish state</label>
-        <select id="status" name="status" class="form-select">
-          <option value="draft" <%= selected?.status === 'draft' ? 'selected' : '' %>>Draft</option>
-          <option value="scheduled" <%= selected?.status === 'scheduled' ? 'selected' : '' %>>Scheduled</option>
-          <option value="published" <%= selected?.status === 'published' ? 'selected' : '' %>>Published now</option>
-        </select>
-      </div>
-
-      <div class="col-12 col-md-4">
-        <label for="type" class="form-label">Banner type</label>
-        <select id="type" name="type" class="form-select">
-          <option value="top" <%= selected?.type === 'top' ? 'selected' : '' %>>Top banner</option>
-          <option value="bottom" <%= selected?.type === 'bottom' ? 'selected' : '' %>>Bottom banner</option>
-          <option value="modal" <%= selected?.type === 'modal' ? 'selected' : '' %>>Modal</option>
-        </select>
-      </div>
-
-      <div class="col-12 col-md-4">
-        <label for="position" class="form-label">Position</label>
-        <select id="position" name="position" class="form-select">
-          <option value="top" <%= selected?.position === 'top' ? 'selected' : '' %>>Top</option>
-          <option value="bottom" <%= selected?.position === 'bottom' ? 'selected' : '' %>>Bottom</option>
-        </select>
-      </div>
-
-      <div class="col-12 col-md-6">
-        <label for="title" class="form-label">Title (modal)</label>
-        <input id="title" name="title" class="form-control" value="<%= selected?.title || '' %>" />
-      </div>
-
-      <div class="col-12 col-md-6">
-        <label for="confirmLabel" class="form-label">Button label</label>
-        <input id="confirmLabel" name="confirmLabel" class="form-control" value="<%= selected?.confirmLabel || 'Okay' %>" />
-      </div>
-
-      <div class="col-12">
-        <label for="message" class="form-label">Message</label>
-        <textarea id="message" name="message" rows="4" class="form-control"><%= selected?.message || '' %></textarea>
-      </div>
-
-      <div class="col-12 col-md-6">
-        <label for="scheduleStartAt" class="form-label">Schedule start (UTC)</label>
-        <input id="scheduleStartAt" type="datetime-local" name="scheduleStartAt" class="form-control" value="<%= selected?.scheduleStartAt ? new Date(selected.scheduleStartAt).toISOString().slice(0,16) : '' %>" />
-      </div>
-      <div class="col-12 col-md-6">
-        <label for="scheduleEndAt" class="form-label">Schedule end (UTC)</label>
-        <input id="scheduleEndAt" type="datetime-local" name="scheduleEndAt" class="form-control" value="<%= selected?.scheduleEndAt ? new Date(selected.scheduleEndAt).toISOString().slice(0,16) : '' %>" />
-      </div>
-
-      <div class="col-6 col-md-3">
-        <label class="form-label" for="backgroundColor">Background</label>
-        <input id="backgroundColor" name="backgroundColor" type="color" class="form-control form-control-color" value="<%= selected?.backgroundColor || '#1f2937' %>">
-      </div>
-      <div class="col-6 col-md-3">
-        <label class="form-label" for="textColor">Text</label>
-        <input id="textColor" name="textColor" type="color" class="form-control form-control-color" value="<%= selected?.textColor || '#ffffff' %>">
-      </div>
-      <div class="col-6 col-md-3">
-        <label class="form-label" for="buttonColor">Button bg</label>
-        <input id="buttonColor" name="buttonColor" type="color" class="form-control form-control-color" value="<%= selected?.buttonColor || '#ffffff' %>">
-      </div>
-      <div class="col-6 col-md-3">
-        <label class="form-label" for="buttonTextColor">Button text</label>
-        <input id="buttonTextColor" name="buttonTextColor" type="color" class="form-control form-control-color" value="<%= selected?.buttonTextColor || '#111827' %>">
-      </div>
-
-      <div class="col-12 col-md-4">
-        <label for="autoHideMs" class="form-label">Auto-hide (ms)</label>
-        <input id="autoHideMs" name="autoHideMs" type="number" min="0" class="form-control" value="<%= selected?.autoHideMs ?? 0 %>" />
-      </div>
-      <div class="col-12 col-md-4">
-        <label for="borderRadius" class="form-label">Border radius</label>
-        <input id="borderRadius" name="borderRadius" type="number" min="0" class="form-control" value="<%= selected?.borderRadius ?? 8 %>" />
-      </div>
-      <div class="col-12 col-md-4">
-        <label for="zIndex" class="form-label">z-index</label>
-        <input id="zIndex" name="zIndex" type="number" min="10" class="form-control" value="<%= selected?.zIndex ?? 2147483000 %>" />
-      </div>
-
-      <div class="col-12 d-flex gap-4 flex-wrap">
-        <div class="form-check form-switch">
-          <input class="form-check-input" type="checkbox" id="dismissible" name="dismissible" <%= selected?.dismissible ? 'checked' : '' %> />
-          <label class="form-check-label" for="dismissible">Dismissible</label>
+  const rows = items.map((item) => ({
+    values: {
+      title: item.title || '',
+      message: item.message || '',
+      status: item.status || 'draft',
+      type: item.type || 'top',
+      scheduleStartAt: item.scheduleStartAt || '',
+      scheduleEndAt: item.scheduleEndAt || ''
+    },
+    cells: {
+      title: `<div class="fw-semibold">${item.title || 'Untitled'}</div>`,
+      message: `<div class="small text-muted text-truncate" style="max-width: 420px;" title="${(item.message || '').replaceAll('"', '&quot;')}">${item.message || 'No message'}</div>`,
+      status: `<span class="badge text-bg-${item.status === 'published' ? 'success' : item.status === 'scheduled' ? 'warning' : 'secondary'}">${item.status}</span>`,
+      type: item.type,
+      schedule: `<div class="small"><div>${item.scheduleStartAt ? new Date(item.scheduleStartAt).toISOString().replace('T', ' ').slice(0, 16) + ' UTC' : '—'}</div><div>${item.scheduleEndAt ? new Date(item.scheduleEndAt).toISOString().replace('T', ' ').slice(0, 16) + ' UTC' : '—'}</div></div>`,
+      actions: `
+        <div class="d-inline-flex gap-1">
+          <a class="btn btn-sm btn-outline-primary" href="/workspaces/${workspace._id}/announcements/${item.id}/edit">Edit</a>
+          <form method="POST" action="/workspaces/${workspace._id}/announcements" class="d-inline">
+            <input type="hidden" name="intent" value="set-status" />
+            <input type="hidden" name="bannerId" value="${item.id}" />
+            <input type="hidden" name="nextStatus" value="${item.status === 'published' ? 'draft' : 'published'}" />
+            <button class="btn btn-sm btn-outline-secondary">${item.status === 'published' ? 'Unpublish' : 'Publish'}</button>
+          </form>
+          <form method="POST" action="/workspaces/${workspace._id}/announcements" class="d-inline" onsubmit="return confirm('Delete this banner?')">
+            <input type="hidden" name="intent" value="delete" />
+            <input type="hidden" name="bannerId" value="${item.id}" />
+            <button class="btn btn-sm btn-outline-danger">Delete</button>
+          </form>
         </div>
-        <div class="form-check form-switch">
-          <input class="form-check-input" type="checkbox" id="showOncePerSession" name="showOncePerSession" <%= selected?.showOncePerSession ? 'checked' : '' %> />
-          <label class="form-check-label" for="showOncePerSession">Show once per session</label>
-        </div>
-        <div class="form-check form-switch">
-          <input class="form-check-input" type="checkbox" id="fullWidth" name="fullWidth" <%= selected?.fullWidth ? 'checked' : '' %> />
-          <label class="form-check-label" for="fullWidth">Full width</label>
-        </div>
-        <div class="form-check form-switch">
-          <input class="form-check-input" type="checkbox" id="shadow" name="shadow" <%= selected?.shadow ? 'checked' : '' %> />
-          <label class="form-check-label" for="shadow">Shadow</label>
-        </div>
-      </div>
+      `
+    }
+  }));
+%>
 
-      <div class="col-12">
-        <button class="btn btn-primary"><%= selected ? 'Update banner' : 'Create banner' %></button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<div class="card">
-  <div class="card-header"><strong>All banners</strong></div>
-  <div class="card-body p-0">
-    <table class="table mb-0 align-middle">
-      <thead>
-        <tr>
-          <th>Message</th>
-          <th>Status</th>
-          <th>Type</th>
-          <th>Schedule</th>
-          <th class="text-end">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% if (!items.length) { %>
-          <tr><td colspan="5" class="text-center text-muted py-4">No banners yet.</td></tr>
-        <% } %>
-        <% items.forEach(function(item) { %>
-          <tr>
-            <td>
-              <div class="fw-semibold"><%= item.title || 'Untitled' %></div>
-              <div class="small text-muted"><%= item.message || 'No message' %></div>
-            </td>
-            <td><span class="badge text-bg-<%= item.status === 'published' ? 'success' : item.status === 'scheduled' ? 'warning' : 'secondary' %>"><%= item.status %></span></td>
-            <td><%= item.type %></td>
-            <td class="small">
-              <div><%= item.scheduleStartAt ? new Date(item.scheduleStartAt).toISOString().replace('T', ' ').slice(0, 16) + ' UTC' : '—' %></div>
-              <div><%= item.scheduleEndAt ? new Date(item.scheduleEndAt).toISOString().replace('T', ' ').slice(0, 16) + ' UTC' : '—' %></div>
-            </td>
-            <td class="text-end">
-              <a class="btn btn-sm btn-outline-primary" href="/workspaces/<%= workspace._id %>/announcements?edit=<%= item.id %>">Edit</a>
-              <form method="POST" action="/workspaces/<%= workspace._id %>/announcements" class="d-inline">
-                <input type="hidden" name="intent" value="set-status" />
-                <input type="hidden" name="bannerId" value="<%= item.id %>" />
-                <input type="hidden" name="nextStatus" value="<%= item.status === 'published' ? 'draft' : 'published' %>" />
-                <button class="btn btn-sm btn-outline-secondary"><%= item.status === 'published' ? 'Unpublish' : 'Publish' %></button>
-              </form>
-              <form method="POST" action="/workspaces/<%= workspace._id %>/announcements" class="d-inline" onsubmit="return confirm('Delete this banner?')">
-                <input type="hidden" name="intent" value="delete" />
-                <input type="hidden" name="bannerId" value="<%= item.id %>" />
-                <button class="btn btn-sm btn-outline-danger">Delete</button>
-              </form>
-            </td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
-  </div>
-</div>
+<%- include('../partials/bootstrapTableWidget', {
+  tableId: 'banners-table',
+  columns,
+  rows,
+  defaultPageSize: 20
+}) %>

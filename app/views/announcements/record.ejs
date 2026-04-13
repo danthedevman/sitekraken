@@ -1,0 +1,120 @@
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="m-0"><%= isEdit ? 'Edit banner' : 'Create banner' %></h4>
+  <a class="btn btn-outline-secondary btn-sm" href="/workspaces/<%= workspace._id %>/announcements">Back to banners</a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="POST" action="/workspaces/<%= workspace._id %>/announcements" class="row g-3">
+      <input type="hidden" name="intent" value="<%= isEdit ? 'update' : 'create' %>" />
+      <input type="hidden" name="bannerId" value="<%= banner?.id || '' %>" />
+      <input type="hidden" name="enabled" value="<%= banners?.enabled ? 'true' : 'false' %>" />
+
+      <div class="col-12 col-md-4">
+        <label for="status" class="form-label">Publish state</label>
+        <select id="status" name="status" class="form-select">
+          <option value="draft" <%= banner?.status === 'draft' ? 'selected' : '' %>>Draft</option>
+          <option value="scheduled" <%= banner?.status === 'scheduled' ? 'selected' : '' %>>Scheduled</option>
+          <option value="published" <%= banner?.status === 'published' ? 'selected' : '' %>>Published now</option>
+        </select>
+      </div>
+
+      <div class="col-12 col-md-4">
+        <label for="type" class="form-label">Banner type</label>
+        <select id="type" name="type" class="form-select">
+          <option value="top" <%= banner?.type === 'top' ? 'selected' : '' %>>Top banner</option>
+          <option value="bottom" <%= banner?.type === 'bottom' ? 'selected' : '' %>>Bottom banner</option>
+          <option value="modal" <%= banner?.type === 'modal' ? 'selected' : '' %>>Modal</option>
+        </select>
+      </div>
+
+      <div class="col-12 col-md-4">
+        <label for="position" class="form-label">Position</label>
+        <select id="position" name="position" class="form-select">
+          <option value="top" <%= banner?.position === 'top' ? 'selected' : '' %>>Top</option>
+          <option value="bottom" <%= banner?.position === 'bottom' ? 'selected' : '' %>>Bottom</option>
+        </select>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label for="title" class="form-label">Title (modal)</label>
+        <input id="title" name="title" class="form-control" value="<%= banner?.title || '' %>" />
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label for="confirmLabel" class="form-label">Button label</label>
+        <input id="confirmLabel" name="confirmLabel" class="form-control" value="<%= banner?.confirmLabel || 'Okay' %>" />
+      </div>
+
+      <div class="col-12">
+        <label for="message" class="form-label">Message</label>
+        <textarea id="message" name="message" rows="4" class="form-control"><%= banner?.message || '' %></textarea>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label for="scheduleStartAt" class="form-label">Schedule start (UTC)</label>
+        <input id="scheduleStartAt" type="datetime-local" name="scheduleStartAt" class="form-control" value="<%= banner?.scheduleStartAt ? new Date(banner.scheduleStartAt).toISOString().slice(0,16) : '' %>" />
+      </div>
+      <div class="col-12 col-md-6">
+        <label for="scheduleEndAt" class="form-label">Schedule end (UTC)</label>
+        <input id="scheduleEndAt" type="datetime-local" name="scheduleEndAt" class="form-control" value="<%= banner?.scheduleEndAt ? new Date(banner.scheduleEndAt).toISOString().slice(0,16) : '' %>" />
+      </div>
+
+      <div class="col-6 col-md-3">
+        <label class="form-label" for="backgroundColor">Background</label>
+        <input id="backgroundColor" name="backgroundColor" type="color" class="form-control form-control-color" value="<%= banner?.backgroundColor || '#1f2937' %>">
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label" for="textColor">Text</label>
+        <input id="textColor" name="textColor" type="color" class="form-control form-control-color" value="<%= banner?.textColor || '#ffffff' %>">
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label" for="buttonColor">Button bg</label>
+        <input id="buttonColor" name="buttonColor" type="color" class="form-control form-control-color" value="<%= banner?.buttonColor || '#ffffff' %>">
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label" for="buttonTextColor">Button text</label>
+        <input id="buttonTextColor" name="buttonTextColor" type="color" class="form-control form-control-color" value="<%= banner?.buttonTextColor || '#111827' %>">
+      </div>
+
+      <div class="col-12 col-md-4">
+        <label for="autoHideMs" class="form-label">Auto-hide (ms)</label>
+        <input id="autoHideMs" name="autoHideMs" type="number" min="0" class="form-control" value="<%= banner?.autoHideMs ?? 0 %>" />
+      </div>
+      <div class="col-12 col-md-4">
+        <label for="borderRadius" class="form-label">Border radius</label>
+        <input id="borderRadius" name="borderRadius" type="number" min="0" class="form-control" value="<%= banner?.borderRadius ?? 8 %>" />
+      </div>
+      <div class="col-12 col-md-4">
+        <label for="zIndex" class="form-label">z-index</label>
+        <input id="zIndex" name="zIndex" type="number" min="10" class="form-control" value="<%= banner?.zIndex ?? 2147483000 %>" />
+      </div>
+
+      <div class="col-12 d-flex gap-4 flex-wrap">
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="dismissible" name="dismissible" <%= banner?.dismissible ? 'checked' : '' %> />
+          <label class="form-check-label" for="dismissible">Dismissible</label>
+        </div>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="showOncePerSession" name="showOncePerSession" <%= banner?.showOncePerSession ? 'checked' : '' %> />
+          <label class="form-check-label" for="showOncePerSession">Show once per session</label>
+        </div>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="fullWidth" name="fullWidth" <%= banner?.fullWidth ? 'checked' : '' %> />
+          <label class="form-check-label" for="fullWidth">Full width</label>
+        </div>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="shadow" name="shadow" <%= banner?.shadow ? 'checked' : '' %> />
+          <label class="form-check-label" for="shadow">Shadow</label>
+        </div>
+      </div>
+
+      <div class="col-12 d-flex gap-2">
+        <button class="btn btn-primary"><%= isEdit ? 'Update banner' : 'Create banner' %></button>
+        <% if (isEdit) { %>
+          <a class="btn btn-outline-secondary" href="/workspaces/<%= workspace._id %>/announcements/new">Duplicate as new</a>
+        <% } %>
+      </div>
+    </form>
+  </div>
+</div>
