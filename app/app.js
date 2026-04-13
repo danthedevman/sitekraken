@@ -20,6 +20,7 @@ import workspaceRoutes from './routes/workspaces.js';
 import chatbotRoutes from './routes/chatbot.js';
 import analyticsRoutes from './routes/analytics.js';
 import logsRoutes from './routes/logs.js';
+import feedbackRoutes from './routes/feedback.js';
 import { loadWorkspace } from './middleware/workspace.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -71,6 +72,7 @@ async function startServer() {
   app.use('/workspaces/:workspaceId/chatbot', ensureAuth, loadWorkspace('workspaceId'), chatbotRoutes);
   app.use('/workspaces/:workspaceId/analytics', ensureAuth, loadWorkspace('workspaceId'), analyticsRoutes);
   app.use('/workspaces/:workspaceId/logs', ensureAuth, loadWorkspace('workspaceId'), logsRoutes);
+  app.use('/workspaces/:workspaceId/feedback', ensureAuth, loadWorkspace('workspaceId'), feedbackRoutes);
 
   app.use((req, res) => {
     res.status(301).redirect('/workspaces');

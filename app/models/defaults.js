@@ -142,6 +142,56 @@ export function defaultAnalyticsConfig(overrides = {}) {
 }
 
 
+
+export function defaultFeedbackConfig(overrides = {}) {
+  const overrideConfig =
+    overrides && typeof overrides.config === "object" ? overrides.config : {};
+
+  return {
+    name: overrides.name || "feedback",
+    enabled: typeof overrides.enabled === "boolean" ? overrides.enabled : true,
+    scriptUrl:
+      overrides.scriptUrl || "https://api.sitekraken.com/public/lib/feedback.js",
+    module: typeof overrides.module === "boolean" ? overrides.module : false,
+    config: {
+      tabLabel: overrideConfig.tabLabel || "Feedback",
+      formTitle: overrideConfig.formTitle || "Send feedback",
+      submitLabel: overrideConfig.submitLabel || "Submit",
+      successTitle: overrideConfig.successTitle || "Thanks for your feedback!",
+      successMessage:
+        overrideConfig.successMessage || "Your submission has been received.",
+      accent: overrideConfig.accent || "#111827",
+      textColor: overrideConfig.textColor || "#ffffff",
+      panelBg: overrideConfig.panelBg || "#ffffff",
+      fields: Array.isArray(overrideConfig.fields)
+        ? overrideConfig.fields
+        : [
+            {
+              key: "email",
+              type: "email",
+              label: "Email",
+              placeholder: "you@example.com",
+              required: true,
+              options: []
+            },
+            {
+              key: "message",
+              type: "multiline",
+              label: "Feedback",
+              placeholder: "Tell us what you think...",
+              required: true,
+              options: []
+            }
+          ],
+      allowedDomains: Array.isArray(overrideConfig.allowedDomains)
+        ? overrideConfig.allowedDomains
+        : Array.isArray(overrides.allowedDomains)
+          ? overrides.allowedDomains
+          : []
+    }
+  };
+}
+
 export function defaultLogsConfig(overrides = {}) {
   const overrideConfig =
     overrides && typeof overrides.config === "object" ? overrides.config : {};
@@ -180,6 +230,10 @@ export function defaultWorkspaceChatbot(workspaceId = null, overrides = {}) {
     allowedDomains: defaults.allowedDomains,
   });
 
+  const feedback = defaultFeedbackConfig({
+    allowedDomains: defaults.allowedDomains,
+  });
+
   return {
     apiKey: defaults.apiKey,
     allowedDomains: defaults.allowedDomains,
@@ -192,6 +246,7 @@ export function defaultWorkspaceChatbot(workspaceId = null, overrides = {}) {
     },
     analytics,
     logs,
+    feedback,
   };
 }
 
@@ -226,6 +281,15 @@ export function ensureWorkspaceChatbotDefaults(workspace = {}) {
     module: workspace?.logs?.module,
     allowedDomains: workspaceAllowedDomains,
     config: workspace?.logs?.config || {},
+  });
+
+  const feedbackDefaults = defaultFeedbackConfig({
+    name: workspace?.feedback?.name,
+    enabled: workspace?.feedback?.enabled,
+    scriptUrl: workspace?.feedback?.scriptUrl,
+    module: workspace?.feedback?.module,
+    allowedDomains: workspaceAllowedDomains,
+    config: workspace?.feedback?.config || {},
   });
 
   const existingConfig =
@@ -335,6 +399,32 @@ export function ensureWorkspaceChatbotDefaults(workspace = {}) {
             : workspaceAllowedDomains.length > 0
               ? workspaceAllowedDomains
               : logsDefaults.config.allowedDomains,
+      },
+    },
+    feedback: {
+      ...(workspace?.feedback || {}),
+      name: workspace?.feedback?.name || feedbackDefaults.name,
+      enabled:
+        typeof workspace?.feedback?.enabled === "boolean"
+          ? workspace.feedback.enabled
+          : feedbackDefaults.enabled,
+      scriptUrl: workspace?.feedback?.scriptUrl || feedbackDefaults.scriptUrl,
+      module:
+        typeof workspace?.feedback?.module === "boolean"
+          ? workspace.feedback.module
+          : feedbackDefaults.module,
+      config: {
+        ...feedbackDefaults.config,
+        ...(workspace?.feedback?.config || {}),
+        fields: Array.isArray(workspace?.feedback?.config?.fields)
+          ? workspace.feedback.config.fields
+          : feedbackDefaults.config.fields,
+        allowedDomains:
+          Array.isArray(workspace?.feedback?.config?.allowedDomains)
+            ? workspace.feedback.config.allowedDomains
+            : workspaceAllowedDomains.length > 0
+              ? workspaceAllowedDomains
+              : feedbackDefaults.config.allowedDomains,
       },
     },
   };

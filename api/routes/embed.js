@@ -33,6 +33,7 @@ function buildModulesFromWorkspace(workspace, request) {
   const chatModule = workspace.chatbot || {};
   const analyticsModule = workspace.analytics || {};
   const logsModule = workspace.logs || {};
+  const feedbackModule = workspace.feedback || {};
   const allowedDomains = Array.isArray(workspace.allowedDomains)
     ? workspace.allowedDomains
     : [];
@@ -47,6 +48,11 @@ function buildModulesFromWorkspace(workspace, request) {
   const logsApiUrl = getOriginFromUrl(
     logsModule?.config?.apiUrl,
     getOriginFromUrl(logsScriptUrl, baseUrl)
+  );
+  const feedbackScriptUrl = feedbackModule.scriptUrl || `${baseUrl}/public/lib/feedback.js`;
+  const feedbackApiUrl = getOriginFromUrl(
+    feedbackModule?.config?.apiUrl,
+    getOriginFromUrl(feedbackScriptUrl, baseUrl)
   );
 
   return [
@@ -84,6 +90,20 @@ function buildModulesFromWorkspace(workspace, request) {
         ...(logsModule.config || {}),
         allowedDomains,
         apiUrl: logsApiUrl
+      }
+    },
+    {
+      ...feedbackModule,
+      name: feedbackModule.name || "feedback",
+      scriptUrl: feedbackScriptUrl,
+      module:
+        typeof feedbackModule.module === "boolean" ? feedbackModule.module : false,
+      enabled:
+        typeof feedbackModule.enabled === "boolean" ? feedbackModule.enabled : true,
+      config: {
+        ...(feedbackModule.config || {}),
+        allowedDomains,
+        apiUrl: feedbackApiUrl
       }
     }
   ];

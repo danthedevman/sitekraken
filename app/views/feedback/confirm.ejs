@@ -1,0 +1,13 @@
+<%- include('./_tabs') %>
+
+<form method="POST" action="/workspaces/<%= workspace._id %>/feedback/confirm" class="card card-body">
+  <div class="mb-3">
+    <label class="form-label">Confirmation title</label>
+    <input name="successTitle" class="form-control" value="<%= successTitle %>" />
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Confirmation message</label>
+    <textarea name="successMessage" rows="4" class="form-control"><%= successMessage %></textarea>
+  </div>
+  <button class="btn btn-primary">Save confirmation</button>
+</form>

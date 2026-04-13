@@ -1,0 +1,19 @@
+<%- include('./_tabs') %>
+
+<div class="card card-body">
+  <h5 class="mb-3">Feedback submissions</h5>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead><tr><th>Submitted</th><th>Page</th><th>Data</th></tr></thead>
+      <tbody>
+        <% submissions.forEach((item) => { %>
+          <tr>
+            <td><%= item.createdAtLabel %></td>
+            <td class="text-break"><%= item.pageUrl || '-' %></td>
+            <td><pre class="mb-0 small"><%= JSON.stringify(item.data, null, 2) %></pre></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,124 @@
+<%- include('./_tabs') %>
+
+<form method="POST" action="/workspaces/<%= workspace._id %>/feedback" class="card card-body">
+  <div class="row g-3">
+    <div class="col-md-3">
+      <label class="form-label">Library name</label>
+      <input name="name" class="form-control" value="<%= feedback.name || 'feedback' %>" />
+    </div>
+    <div class="col-md-5">
+      <label class="form-label">Script URL</label>
+      <input name="scriptUrl" class="form-control" value="<%= feedback.scriptUrl || '' %>" />
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="enabled" <%= feedback.enabled !== false ? 'checked' : '' %> />
+        <label class="form-check-label">Enabled</label>
+      </div>
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="module" <%= feedback.module ? 'checked' : '' %> />
+        <label class="form-check-label">Module</label>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">Feedback tab label</label>
+      <input name="tabLabel" class="form-control" value="<%= feedback.config?.tabLabel || 'Feedback' %>" />
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Form title</label>
+      <input name="formTitle" class="form-control" value="<%= feedback.config?.formTitle || 'Send feedback' %>" />
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Submit button label</label>
+      <input name="submitLabel" class="form-control" value="<%= feedback.config?.submitLabel || 'Submit' %>" />
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">Accent</label>
+      <input type="color" name="accent" class="form-control form-control-color" value="<%= feedback.config?.accent || '#111827' %>" />
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Accent text</label>
+      <input type="color" name="textColor" class="form-control form-control-color" value="<%= feedback.config?.textColor || '#ffffff' %>" />
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Panel background</label>
+      <input type="color" name="panelBg" class="form-control form-control-color" value="<%= feedback.config?.panelBg || '#ffffff' %>" />
+    </div>
+
+    <div class="col-12">
+      <label class="form-label">Custom fields</label>
+      <div id="feedback-fields"></div>
+      <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="add-field">Add field</button>
+      <input type="hidden" id="fields-json" name="fieldsJson" value='<%- fieldsJson %>' />
+      <div class="form-text">Supported types: text, multiline, select, email. Mark each field as required or optional.</div>
+    </div>
+  </div>
+
+  <div class="mt-3">
+    <button class="btn btn-primary">Save feedback settings</button>
+  </div>
+</form>
+
+<script>
+(() => {
+  const container = document.getElementById('feedback-fields');
+  const addBtn = document.getElementById('add-field');
+  const hidden = document.getElementById('fields-json');
+  const initial = (() => { try { return JSON.parse(hidden.value || '[]'); } catch { return []; } })();
+
+  function rowTemplate(field = {}) {
+    const wrap = document.createElement('div');
+    wrap.className = 'border rounded p-2 mb-2';
+    wrap.innerHTML = `
+      <div class="row g-2 align-items-end">
+        <div class="col-md-2"><label class="form-label">Type</label><select class="form-select field-type"><option value="text">Text</option><option value="multiline">Multiline</option><option value="select">Select</option><option value="email">Email</option></select></div>
+        <div class="col-md-2"><label class="form-label">Key</label><input class="form-control field-key" /></div>
+        <div class="col-md-3"><label class="form-label">Label</label><input class="form-control field-label" /></div>
+        <div class="col-md-3"><label class="form-label">Placeholder</label><input class="form-control field-placeholder" /></div>
+        <div class="col-md-2"><div class="form-check"><input type="checkbox" class="form-check-input field-required" /><label class="form-check-label">Required</label></div><button type="button" class="btn btn-link text-danger p-0 mt-1 remove-field">Remove</button></div>
+        <div class="col-12 field-options-wrap d-none"><label class="form-label">Select options (comma separated)</label><input class="form-control field-options" /></div>
+      </div>`;
+
+    const typeEl = wrap.querySelector('.field-type');
+    const optionsWrap = wrap.querySelector('.field-options-wrap');
+    typeEl.addEventListener('change', () => optionsWrap.classList.toggle('d-none', typeEl.value !== 'select'));
+    wrap.querySelector('.remove-field').addEventListener('click', () => { wrap.remove(); sync(); });
+
+    typeEl.value = field.type || 'text';
+    wrap.querySelector('.field-key').value = field.key || '';
+    wrap.querySelector('.field-label').value = field.label || '';
+    wrap.querySelector('.field-placeholder').value = field.placeholder || '';
+    wrap.querySelector('.field-required').checked = Boolean(field.required);
+    wrap.querySelector('.field-options').value = Array.isArray(field.options) ? field.options.join(', ') : '';
+    optionsWrap.classList.toggle('d-none', typeEl.value !== 'select');
+
+    wrap.querySelectorAll('input,select').forEach((el) => el.addEventListener('input', sync));
+
+    return wrap;
+  }
+
+  function sync() {
+    const data = Array.from(container.querySelectorAll('.border')).map((el) => {
+      const type = el.querySelector('.field-type').value;
+      const options = el.querySelector('.field-options').value.split(',').map((x) => x.trim()).filter(Boolean);
+      return {
+        type,
+        key: el.querySelector('.field-key').value,
+        label: el.querySelector('.field-label').value,
+        placeholder: el.querySelector('.field-placeholder').value,
+        required: el.querySelector('.field-required').checked,
+        options
+      };
+    });
+    hidden.value = JSON.stringify(data);
+  }
+
+  (initial.length ? initial : [{ type: 'text', key: 'name', label: 'Name', required: true }]).forEach((f) => container.appendChild(rowTemplate(f)));
+  addBtn.addEventListener('click', () => { container.appendChild(rowTemplate()); sync(); });
+  sync();
+})();
+</script>

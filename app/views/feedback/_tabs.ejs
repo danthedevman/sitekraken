@@ -1,0 +1,7 @@
+<ul class="nav nav-tabs mb-3">
+  <% tabs.forEach((tab) => { %>
+    <li class="nav-item">
+      <a class="nav-link <%= tab.active ? 'active' : '' %>" href="<%= tab.href %>"><%= tab.label %></a>
+    </li>
+  <% }) %>
+</ul>
