@@ -34,6 +34,7 @@ function buildModulesFromWorkspace(workspace, request) {
   const analyticsModule = workspace.analytics || {};
   const logsModule = workspace.logs || {};
   const bannersModule = workspace.banners || {};
+  const feedbackModule = workspace.feedback || {};
   const allowedDomains = Array.isArray(workspace.allowedDomains)
     ? workspace.allowedDomains
     : [];
@@ -42,6 +43,7 @@ function buildModulesFromWorkspace(workspace, request) {
   const analyticsScriptUrl = analyticsModule.scriptUrl || `${baseUrl}/public/lib/analytics.js`;
   const logsScriptUrl = logsModule.scriptUrl || `${baseUrl}/public/lib/logs.js`;
   const bannersScriptUrl = bannersModule.scriptUrl || `${baseUrl}/public/lib/banners.js`;
+  const feedbackScriptUrl = feedbackModule.scriptUrl || `${baseUrl}/public/lib/feedback.js`;
   const analyticsApiUrl = getOriginFromUrl(
     analyticsModule?.config?.apiUrl,
     getOriginFromUrl(analyticsScriptUrl, baseUrl)
@@ -49,6 +51,10 @@ function buildModulesFromWorkspace(workspace, request) {
   const logsApiUrl = getOriginFromUrl(
     logsModule?.config?.apiUrl,
     getOriginFromUrl(logsScriptUrl, baseUrl)
+  );
+  const feedbackApiUrl = getOriginFromUrl(
+    feedbackModule?.config?.apiUrl,
+    getOriginFromUrl(feedbackScriptUrl, baseUrl)
   );
 
   return [
@@ -99,6 +105,20 @@ function buildModulesFromWorkspace(workspace, request) {
       config: {
         ...(bannersModule.config || {}),
         allowedDomains
+      }
+    },
+    {
+      ...feedbackModule,
+      name: feedbackModule.name || "feedback",
+      scriptUrl: feedbackScriptUrl,
+      module:
+        typeof feedbackModule.module === "boolean" ? feedbackModule.module : false,
+      enabled:
+        typeof feedbackModule.enabled === "boolean" ? feedbackModule.enabled : true,
+      config: {
+        ...(feedbackModule.config || {}),
+        allowedDomains,
+        apiUrl: feedbackApiUrl
       }
     },
   ];
