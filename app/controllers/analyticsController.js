@@ -9,6 +9,16 @@ function toPct(part, total) {
   return Math.round((part / total) * 1000) / 10;
 }
 
+function formatDuration(seconds) {
+  const safeSeconds = Math.max(0, Math.round(Number(seconds) || 0));
+  const minutes = Math.floor(safeSeconds / 60);
+  const remainingSeconds = safeSeconds % 60;
+
+  if (!minutes) return `${remainingSeconds}s`;
+  if (!remainingSeconds) return `${minutes}m`;
+  return `${minutes}m ${remainingSeconds}s`;
+}
+
 async function hydrateWorkspace(req) {
   const { workspaces } = getCollections();
   const workspace = req.workspace;
@@ -59,6 +69,46 @@ export async function index(req, res) {
     createdAt: { $gte: sevenDaysAgo },
     type: 'page_view'
   });
+
+  const heartbeatCount = await collection.countDocuments({
+    workspaceId,
+    createdAt: { $gte: sevenDaysAgo },
+    type: 'heartbeat'
+  });
+
+  const heartbeatEveryMs = Number(workspace?.analytics?.config?.heartbeatEveryMs) || 30000;
+  const avgTimeOnPageSeconds = pageViews
+    ? Math.round((heartbeatCount * (heartbeatEveryMs / 1000)) / pageViews)
+    : 0;
+
+  const liveWindowMinutes = 5;
+  const liveWindowStart = new Date(now.getTime() - liveWindowMinutes * 60 * 1000);
+
+  const liveUsersAgg = await collection
+    .aggregate([
+      {
+        $match: {
+          workspaceId,
+          createdAt: { $gte: liveWindowStart },
+          type: { $in: ['session_start', 'page_view', 'heartbeat'] }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            userAgent: '$userAgent',
+            language: '$language',
+            tzOffsetMinutes: '$tzOffsetMinutes',
+            viewportW: '$viewportW',
+            viewportH: '$viewportH'
+          }
+        }
+      },
+      { $count: 'liveUsers' }
+    ])
+    .toArray();
+
+  const liveUsers = Number(liveUsersAgg?.[0]?.liveUsers || 0);
 
   const clicksByType = await collection
     .aggregate([
@@ -144,7 +194,18 @@ export async function index(req, res) {
     active: 'analytics',
     scorecards: [
       { label: 'Events (7d)', value: totalEvents, helper: 'All tracked events' },
-      { label: 'Page views (7d)', value: pageViews, helper: 'Page view events only' }
+      { label: 'Page views (7d)', value: pageViews, helper: 'Page view events only' },
+      {
+        label: 'Avg. time on page',
+        value: avgTimeOnPageSeconds,
+        displayValue: formatDuration(avgTimeOnPageSeconds),
+        helper: 'Estimated from heartbeat events (7d)'
+      },
+      {
+        label: 'Live users',
+        value: liveUsers,
+        helper: `Estimated active users in last ${liveWindowMinutes}m`
+      }
     ],
     clickBreakdown: clicksByType.map((item) => ({
       label: item._id,
