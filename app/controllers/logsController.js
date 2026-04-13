@@ -20,6 +20,15 @@ function sanitizeObjectId(value) {
   return new ObjectId(id);
 }
 
+function normalizeLogIds(value) {
+  const ids = Array.isArray(value) ? value : [value];
+  return [...new Set(
+    ids
+      .map((id) => sanitizeObjectId(id))
+      .filter(Boolean)
+  )];
+}
+
 function formatDateTime(value) {
   if (!value) return '';
   const date = value instanceof Date ? value : new Date(value);
@@ -193,5 +202,29 @@ export async function toggleEnabled(req, res) {
   );
 
   req.flash('success', shouldEnable ? 'Logs activated.' : 'Logs deactivated.');
+  return res.redirect(`/workspaces/${workspace._id}/logs`);
+}
+
+export async function bulkDestroy(req, res) {
+  const workspace = await hydrateWorkspace(req);
+  if (!workspace) {
+    req.flash('error', 'Workspace not found');
+    return res.redirect('/workspaces');
+  }
+
+  const logIds = normalizeLogIds(req.body.ids);
+  if (!logIds.length) {
+    req.flash('error', 'No logs selected');
+    return res.redirect(`/workspaces/${workspace._id}/logs`);
+  }
+
+  const db = getDB();
+  const result = await db.collection('website_logs').deleteMany({
+    _id: { $in: logIds },
+    workspaceId: new ObjectId(workspace._id)
+  });
+
+  const deletedCount = Number(result.deletedCount || 0);
+  req.flash('success', `Deleted ${deletedCount} log${deletedCount === 1 ? '' : 's'}.`);
   return res.redirect(`/workspaces/${workspace._id}/logs`);
 }

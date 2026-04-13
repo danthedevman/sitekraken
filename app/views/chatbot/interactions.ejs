@@ -38,6 +38,16 @@
   defaultPageSize: 20,
   columns,
   rows,
+  selectableRows: true,
+  selectionValueKey: 'threadId',
+  bulkActions: {
+    delete: {
+      action: `/workspaces/${workspace._id}/chatbot/interactions/bulk-delete`,
+      method: 'POST',
+      inputName: 'ids',
+      confirmMessage: 'Delete selected interactions and their messages?'
+    }
+  },
   serverPagination: {
     page: tableState.page,
     pageSize: tableState.pageSize,

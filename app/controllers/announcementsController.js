@@ -78,6 +78,11 @@ function getBannerItems(banners = {}) {
   return [];
 }
 
+function normalizeBannerIds(value) {
+  const ids = Array.isArray(value) ? value : [value];
+  return [...new Set(ids.map((id) => String(id || '').trim()).filter(Boolean))];
+}
+
 async function hydrateWorkspace(req) {
   const { workspaces } = getCollections();
   const workspace = req.workspace;
@@ -232,5 +237,46 @@ export async function update(req, res) {
   );
 
   req.flash('success', flashMessage);
+  return res.redirect(`/workspaces/${workspace._id}/announcements`);
+}
+
+export async function bulkDestroy(req, res) {
+  const { workspaces } = getCollections();
+  const workspace = await hydrateWorkspace(req);
+  if (!workspace) {
+    req.flash('error', 'Workspace not found');
+    return res.redirect('/workspaces');
+  }
+
+  const bannerIds = normalizeBannerIds(req.body.ids);
+  if (!bannerIds.length) {
+    req.flash('error', 'No banners selected.');
+    return res.redirect(`/workspaces/${workspace._id}/announcements`);
+  }
+
+  const existing = workspace.banners || {};
+  const existingItems = getBannerItems(existing);
+  const items = existingItems.filter((item) => !bannerIds.includes(item.id));
+  const primaryConfig = items[0] || {};
+  const deletedCount = existingItems.length - items.length;
+
+  await workspaces.updateOne(
+    { _id: new ObjectId(workspace._id) },
+    {
+      $set: {
+        banners: {
+          ...existing,
+          items,
+          config: {
+            ...primaryConfig,
+            allowedDomains: existing?.config?.allowedDomains || [],
+          },
+        },
+        updatedAt: new Date()
+      }
+    }
+  );
+
+  req.flash('success', `Deleted ${deletedCount} banner${deletedCount === 1 ? '' : 's'}.`);
   return res.redirect(`/workspaces/${workspace._id}/announcements`);
 }

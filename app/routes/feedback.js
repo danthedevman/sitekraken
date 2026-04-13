@@ -1,7 +1,15 @@
 import { Router } from 'express';
 
 import { ensureAuth } from '../middleware/auth.js';
-import { confirmation, index, submissions, toggleEnabled, update } from '../controllers/feedbackController.js';
+import {
+  bulkDestroySubmissions,
+  confirmation,
+  index,
+  showSubmission,
+  submissions,
+  toggleEnabled,
+  update
+} from '../controllers/feedbackController.js';
 
 const router = Router({ mergeParams: true });
 
@@ -9,6 +17,8 @@ router.get('/', ensureAuth, index);
 router.post('/', ensureAuth, update);
 router.post('/toggle-enabled', ensureAuth, toggleEnabled);
 router.get('/submissions', ensureAuth, submissions);
+router.post('/submissions/bulk-delete', ensureAuth, bulkDestroySubmissions);
+router.get('/submissions/:submissionId', ensureAuth, showSubmission);
 router.get('/confirmation', ensureAuth, confirmation);
 
 export default router;

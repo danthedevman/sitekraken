@@ -1,0 +1,23 @@
+<%- include('../partials/tabLinks', { workspace, activeTab: 'submissions', tabLinks }) %>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="m-0">Feedback submission</h4>
+  <a href="/workspaces/<%= workspace._id %>/feedback/submissions" class="btn btn-outline-secondary btn-sm">Back to submissions</a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <dl class="row mb-0">
+      <dt class="col-sm-3">Submitted at</dt>
+      <dd class="col-sm-9"><%= submission.createdAt %></dd>
+
+      <dt class="col-sm-3">Page</dt>
+      <dd class="col-sm-9 text-break"><%= submission.pageUrl || '—' %></dd>
+
+      <% Object.entries(submission.payload || {}).forEach(([key, value]) => { %>
+        <dt class="col-sm-3"><%= key %></dt>
+        <dd class="col-sm-9"><%= Array.isArray(value) ? value.join(', ') : value %></dd>
+      <% }) %>
+    </dl>
+  </div>
+</div>

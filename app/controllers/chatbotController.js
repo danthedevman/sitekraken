@@ -101,6 +101,15 @@ function sanitizeThreadId(value) {
   return raw.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 120);
 }
 
+function normalizeThreadIds(value) {
+  const ids = Array.isArray(value) ? value : [value];
+  return [...new Set(
+    ids
+      .map((id) => sanitizeThreadId(id))
+      .filter(Boolean)
+  )];
+}
+
 function parsePositiveInt(value, fallback) {
   const parsed = Number.parseInt(value, 10);
   if (!Number.isFinite(parsed) || parsed < 1) return fallback;
@@ -386,6 +395,38 @@ export async function showInteraction(req, res) {
       createdAtLabel: formatDateTime(message.createdAt)
     }))
   });
+}
+
+export async function bulkDestroyInteractions(req, res) {
+  const workspace = req.workspace;
+
+  if (!workspace) {
+    req.flash('error', 'Workspace not found');
+    return res.redirect('/workspaces');
+  }
+
+  const threadIds = normalizeThreadIds(req.body.ids);
+  if (!threadIds.length) {
+    req.flash('error', 'No interactions selected');
+    return res.redirect(`/workspaces/${workspace._id}/chatbot/interactions`);
+  }
+
+  const db = getDB();
+  const workspaceId = String(workspace._id);
+
+  const threadsResult = await db.collection('chat_threads').deleteMany({
+    workspaceId,
+    threadId: { $in: threadIds }
+  });
+
+  await db.collection('chat_messages').deleteMany({
+    workspaceId,
+    threadId: { $in: threadIds }
+  });
+
+  const deletedCount = Number(threadsResult.deletedCount || 0);
+  req.flash('success', `Deleted ${deletedCount} interaction${deletedCount === 1 ? '' : 's'}.`);
+  return res.redirect(`/workspaces/${workspace._id}/chatbot/interactions`);
 }
 
 export async function update(req, res) {

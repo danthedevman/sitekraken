@@ -5,6 +5,7 @@ import { ensureAuth } from '../middleware/auth.js';
 import fileRoutes from './files.js';
 import knowledgeRoutes from './knowledge.js';
 import {
+  bulkDestroyInteractions,
   index,
   interactions,
   showInteraction,
@@ -24,6 +25,7 @@ const upload = multer({
 router.get('/', ensureAuth, index);
 router.post('/', ensureAuth, upload.single('logo'), update);
 router.get('/interactions', ensureAuth, interactions);
+router.post('/interactions/bulk-delete', ensureAuth, bulkDestroyInteractions);
 router.get('/interactions/:threadId', ensureAuth, showInteraction);
 router.post('/regenerate-key', ensureAuth, regenerateApiKey);
 router.use('/files', fileRoutes);
