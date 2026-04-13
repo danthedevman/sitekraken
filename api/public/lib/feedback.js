@@ -46,6 +46,8 @@
     var root = d.createElement('div');
     root.style.position = 'fixed';
     root.style.zIndex = '2147482999';
+    root.style.width = '0';
+    root.style.height = '0';
 
     var side = getSide(cfg.displaySide);
     var verticalPosition = getVerticalPosition(cfg.verticalPosition);
@@ -61,15 +63,32 @@
       root.style.bottom = offsetPx + 'px';
     }
 
+    var isRightSide = side === 'right';
+
     var tab = d.createElement('button');
     tab.type = 'button';
     tab.textContent = cfg.tabLabel || 'Feedback';
+    tab.setAttribute('aria-expanded', 'false');
     tab.style.border = '0';
-    tab.style.padding = '10px 14px';
-    tab.style.borderRadius = '10px';
+    tab.style.padding = '10px 16px';
+    tab.style.borderRadius = '10px 10px 0 0';
     tab.style.cursor = 'pointer';
     tab.style.background = cfg.tabBackgroundColor || '#111827';
     tab.style.color = cfg.tabTextColor || '#ffffff';
+    tab.style.position = 'absolute';
+    tab.style.top = '0';
+    tab.style.whiteSpace = 'nowrap';
+    tab.style.transformOrigin = 'top left';
+    tab.style.boxShadow = '0 6px 20px rgba(0,0,0,0.2)';
+    tab.style.fontFamily = 'Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+
+    if (isRightSide) {
+      tab.style.right = '0';
+      tab.style.transform = 'translateY(-100%) rotate(90deg)';
+    } else {
+      tab.style.left = '0';
+      tab.style.transform = 'rotate(-90deg) translateX(-100%)';
+    }
 
     var panel = d.createElement('div');
     panel.style.display = 'none';
@@ -81,7 +100,9 @@
     panel.style.padding = '12px';
     panel.style.borderRadius = '10px';
     panel.style.boxShadow = '0 8px 30px rgba(0,0,0,0.2)';
-    panel.style.marginTop = '8px';
+    panel.style.position = 'absolute';
+    panel.style.top = '0';
+    panel.style[isRightSide ? 'right' : 'left'] = '12px';
     panel.style.fontFamily = 'Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
 
     var title = d.createElement('h3');
@@ -225,7 +246,9 @@
     panel.appendChild(form);
 
     tab.addEventListener('click', function () {
-      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+      var isOpen = panel.style.display === 'none';
+      panel.style.display = isOpen ? 'block' : 'none';
+      tab.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     });
 
     root.appendChild(tab);
