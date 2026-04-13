@@ -9,6 +9,61 @@ function toPct(part, total) {
   return Math.round((part / total) * 1000) / 10;
 }
 
+function parseDateInput(value) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return null;
+
+  const date = new Date(`${trimmed}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+}
+
+function formatDateInput(date) {
+  if (!(date instanceof Date)) return '';
+  return date.toISOString().slice(0, 10);
+}
+
+function buildDateRange(startInput, endInput) {
+  const now = new Date();
+  const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const defaultEnd = todayUtc;
+  const defaultStart = new Date(todayUtc.getTime());
+  defaultStart.setUTCDate(defaultStart.getUTCDate() - 6);
+
+  const parsedStart = parseDateInput(startInput);
+  const parsedEnd = parseDateInput(endInput);
+
+  let startDate = parsedStart || parsedEnd || defaultStart;
+  let endDate = parsedEnd || parsedStart || defaultEnd;
+
+  if (startDate > endDate) {
+    [startDate, endDate] = [endDate, startDate];
+  }
+
+  const endExclusive = new Date(endDate.getTime());
+  endExclusive.setUTCDate(endExclusive.getUTCDate() + 1);
+
+  const dayCount = Math.max(1, Math.round((endExclusive.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000)));
+  const isSingleDay = formatDateInput(startDate) === formatDateInput(endDate);
+  const dateRangeLabel = isSingleDay
+    ? `Date: ${formatDateInput(startDate)}`
+    : `${formatDateInput(startDate)} to ${formatDateInput(endDate)}`;
+
+  return {
+    startDate,
+    endDate,
+    endExclusive,
+    dayCount,
+    dateRangeLabel,
+    filters: {
+      startDate: formatDateInput(startDate),
+      endDate: formatDateInput(endDate)
+    }
+  };
+}
+
 async function hydrateWorkspace(req) {
   const { workspaces } = getCollections();
   const workspace = req.workspace;
@@ -45,24 +100,27 @@ export async function index(req, res) {
   const db = getDB();
   const collection = db.collection('website_analytics_events');
 
-  const now = new Date();
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const { startDate, endExclusive, dayCount, dateRangeLabel, filters } = buildDateRange(
+    req.query.startDate,
+    req.query.endDate
+  );
   const workspaceId = new ObjectId(workspace._id);
+  const createdAtMatch = { $gte: startDate, $lt: endExclusive };
 
   const totalEvents = await collection.countDocuments({
     workspaceId,
-    createdAt: { $gte: sevenDaysAgo }
+    createdAt: createdAtMatch
   });
 
   const pageViews = await collection.countDocuments({
     workspaceId,
-    createdAt: { $gte: sevenDaysAgo },
+    createdAt: createdAtMatch,
     type: 'page_view'
   });
 
   const clicksByType = await collection
     .aggregate([
-      { $match: { workspaceId, createdAt: { $gte: sevenDaysAgo }, type: { $in: ['click', 'link_click', 'button_click'] } } },
+      { $match: { workspaceId, createdAt: createdAtMatch, type: { $in: ['click', 'link_click', 'button_click'] } } },
       { $group: { _id: '$type', count: { $sum: 1 } } },
       { $sort: { count: -1 } }
     ])
@@ -73,7 +131,7 @@ export async function index(req, res) {
       {
         $match: {
           workspaceId,
-          createdAt: { $gte: sevenDaysAgo },
+          createdAt: createdAtMatch,
           type: 'page_view',
           pathname: { $nin: ['', null] }
         }
@@ -89,7 +147,7 @@ export async function index(req, res) {
       {
         $match: {
           workspaceId,
-          createdAt: { $gte: sevenDaysAgo },
+          createdAt: createdAtMatch,
           type: 'link_click',
           targetHref: { $nin: ['', null] }
         }
@@ -105,7 +163,7 @@ export async function index(req, res) {
       {
         $match: {
           workspaceId,
-          createdAt: { $gte: sevenDaysAgo },
+          createdAt: createdAtMatch,
           type: 'button_click',
           targetText: { $nin: ['', null] }
         }
@@ -121,7 +179,7 @@ export async function index(req, res) {
       {
         $match: {
           workspaceId,
-          createdAt: { $gte: sevenDaysAgo }
+          createdAt: createdAtMatch
         }
       },
       {
@@ -143,8 +201,8 @@ export async function index(req, res) {
     workspace,
     active: 'analytics',
     scorecards: [
-      { label: 'Events (7d)', value: totalEvents, helper: 'All tracked events' },
-      { label: 'Page views (7d)', value: pageViews, helper: 'Page view events only' }
+      { label: `Events (${dayCount}d)`, value: totalEvents, helper: 'All tracked events' },
+      { label: `Page views (${dayCount}d)`, value: pageViews, helper: 'Page view events only' }
     ],
     clickBreakdown: clicksByType.map((item) => ({
       label: item._id,
@@ -155,7 +213,8 @@ export async function index(req, res) {
     topLinks: topLinks.map((item) => ({ href: item._id, count: item.count })),
     topButtons: topButtons.map((item) => ({ label: item._id, count: item.count })),
     eventTimeline,
-    dateRangeLabel: 'Last 7 days'
+    dateRangeLabel,
+    filters
   });
 }
 
