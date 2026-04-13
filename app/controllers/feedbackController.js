@@ -138,6 +138,16 @@ function normalizeSubmissionIds(value) {
   )];
 }
 
+function parsePositiveInt(value, fallback) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
+  return parsed;
+}
+
+function escapeRegExp(value) {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export async function index(req, res) {
   const workspace = await hydrateWorkspace(req);
   if (!workspace) {
@@ -218,11 +228,41 @@ export async function submissions(req, res) {
   }
 
   const db = getDB();
-  const feedbackSubmissions = await db
-    .collection('website_feedback_submissions')
-    .find({ workspaceId: new ObjectId(workspace._id) })
-    .sort({ createdAt: -1 })
-    .limit(200)
+  const collection = db.collection('website_feedback_submissions');
+  const workspaceId = new ObjectId(workspace._id);
+  const pageSize = parsePositiveInt(req.query.pageSize, 20);
+  const page = parsePositiveInt(req.query.page, 1);
+  const search = String(req.query.search || '').trim();
+  const sort = String(req.query.sort || 'createdAt').trim();
+  const direction = String(req.query.direction || 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
+  const sortDirection = direction === 'asc' ? 1 : -1;
+  const sortConfig = {
+    createdAt: { createdAt: sortDirection, _id: sortDirection },
+    pageUrl: { pageUrl: sortDirection, createdAt: -1 }
+  };
+  const sortKey = Object.prototype.hasOwnProperty.call(sortConfig, sort) ? sort : 'createdAt';
+  const query = { workspaceId };
+
+  if (search) {
+    const escapedSearch = escapeRegExp(search);
+    const searchRegex = new RegExp(escapedSearch, 'i');
+
+    query.$or = [
+      { pageUrl: { $regex: searchRegex } },
+      { $expr: { $regexMatch: { input: { $toString: '$payload' }, regex: escapedSearch, options: 'i' } } }
+    ];
+  }
+
+  const totalRows = await collection.countDocuments(query);
+  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const skip = (currentPage - 1) * pageSize;
+
+  const feedbackSubmissions = await collection
+    .find(query)
+    .sort(sortConfig[sortKey])
+    .skip(skip)
+    .limit(pageSize)
     .toArray();
 
   res.render('feedback/submissions', {
@@ -235,6 +275,15 @@ export async function submissions(req, res) {
       payload: entry.payload && typeof entry.payload === 'object' ? entry.payload : {},
       pageUrl: String(entry.pageUrl || ''),
     })),
+    tableState: {
+      search,
+      sort: sortKey,
+      direction,
+      page: currentPage,
+      pageSize,
+      totalRows,
+      totalPages
+    }
   });
 }
 

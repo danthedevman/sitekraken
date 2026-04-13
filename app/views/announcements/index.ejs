@@ -76,7 +76,7 @@
   tableId: 'banners-table',
   columns,
   rows,
-  defaultPageSize: 20,
+  defaultPageSize: tableState.pageSize,
   selectableRows: true,
   selectionValueKey: 'id',
   bulkActions: {
@@ -86,5 +86,14 @@
       inputName: 'ids',
       confirmMessage: 'Delete selected banners?'
     }
+  },
+  serverPagination: {
+    page: tableState.page,
+    totalPages: tableState.totalPages,
+    totalRows: tableState.totalRows,
+    search: tableState.search,
+    pageSize: tableState.pageSize,
+    sort: tableState.sort,
+    direction: tableState.direction
   }
 }) %>
