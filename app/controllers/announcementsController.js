@@ -105,6 +105,13 @@ async function hydrateWorkspace(req) {
   return serializeDoc(hydratedWorkspace);
 }
 
+function sortedItems(workspace) {
+  const banners = workspace.banners || {};
+  return getBannerItems(banners).sort((a, b) => {
+    return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
+  });
+}
+
 export async function index(req, res) {
   const workspace = await hydrateWorkspace(req);
   if (!workspace) {
@@ -113,19 +120,39 @@ export async function index(req, res) {
   }
 
   const banners = workspace.banners || {};
-  const items = getBannerItems(banners).sort((a, b) => {
-    return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
-  });
-
-  const editId = String(req.query.edit || '').trim();
-  const selected = items.find((item) => item.id === editId) || null;
+  const items = sortedItems(workspace);
 
   res.render('announcements/index', {
     workspace,
     active: 'announcements',
     banners,
     items,
-    selected,
+  });
+}
+
+export async function record(req, res) {
+  const workspace = await hydrateWorkspace(req);
+  if (!workspace) {
+    req.flash('error', 'Workspace not found');
+    return res.redirect('/workspaces');
+  }
+
+  const items = sortedItems(workspace);
+  const bannerId = String(req.params.bannerId || '').trim();
+  const isEdit = Boolean(bannerId);
+  const banner = isEdit ? items.find((item) => item.id === bannerId) : null;
+
+  if (isEdit && !banner) {
+    req.flash('error', 'Banner not found');
+    return res.redirect(`/workspaces/${workspace._id}/announcements`);
+  }
+
+  return res.render('announcements/record', {
+    workspace,
+    active: 'announcements',
+    banners: workspace.banners || {},
+    banner,
+    isEdit,
   });
 }
 
