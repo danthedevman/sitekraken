@@ -76,6 +76,25 @@
         <label class="form-label">Button text</label>
         <input type="color" name="buttonTextColor" class="form-control form-control-color" value="<%= feedback?.config?.buttonTextColor || '#ffffff' %>" />
       </div>
+      <div class="col-md-4">
+        <label class="form-label">Button side</label>
+        <select class="form-select" name="displaySide">
+          <option value="right" <%= (feedback?.config?.displaySide || 'right') === 'right' ? 'selected' : '' %>>Right</option>
+          <option value="left" <%= feedback?.config?.displaySide === 'left' ? 'selected' : '' %>>Left</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Vertical position</label>
+        <select class="form-select" name="verticalPosition">
+          <option value="bottom" <%= (feedback?.config?.verticalPosition || 'bottom') === 'bottom' ? 'selected' : '' %>>Bottom</option>
+          <option value="middle" <%= feedback?.config?.verticalPosition === 'middle' ? 'selected' : '' %>>Middle</option>
+          <option value="top" <%= feedback?.config?.verticalPosition === 'top' ? 'selected' : '' %>>Top</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Offset (px)</label>
+        <input type="number" min="0" max="200" step="1" class="form-control" name="offsetPx" value="<%= Number.isFinite(Number(feedback?.config?.offsetPx)) ? Number(feedback.config.offsetPx) : 12 %>" />
+      </div>
 
       <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-2">

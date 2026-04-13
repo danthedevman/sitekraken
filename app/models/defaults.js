@@ -244,6 +244,15 @@ export function defaultFeedbackConfig(overrides = {}) {
       panelTextColor: overrideConfig.panelTextColor || "#111827",
       buttonBackgroundColor: overrideConfig.buttonBackgroundColor || "#111827",
       buttonTextColor: overrideConfig.buttonTextColor || "#ffffff",
+      displaySide: overrideConfig.displaySide === "left" ? "left" : "right",
+      verticalPosition:
+        overrideConfig.verticalPosition === "top" || overrideConfig.verticalPosition === "middle"
+          ? overrideConfig.verticalPosition
+          : "bottom",
+      offsetPx:
+        Number.isFinite(Number(overrideConfig.offsetPx)) && Number(overrideConfig.offsetPx) >= 0
+          ? Math.min(200, Math.round(Number(overrideConfig.offsetPx)))
+          : 12,
       fields: Array.isArray(overrideConfig.fields) ? overrideConfig.fields : [],
       allowedDomains: Array.isArray(overrideConfig.allowedDomains)
         ? overrideConfig.allowedDomains
