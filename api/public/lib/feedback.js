@@ -90,25 +90,61 @@
       tab.style.transform = 'rotate(-90deg) translateX(-100%)';
     }
 
+    var overlay = d.createElement('button');
+    overlay.type = 'button';
+    overlay.setAttribute('aria-label', 'Close feedback form');
+    overlay.style.display = 'none';
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.border = '0';
+    overlay.style.padding = '0';
+    overlay.style.margin = '0';
+    overlay.style.background = 'rgba(17, 24, 39, 0.45)';
+    overlay.style.cursor = 'pointer';
+
     var panel = d.createElement('div');
     panel.style.display = 'none';
     panel.style.width = 'min(360px, calc(100vw - 24px))';
-    panel.style.maxHeight = '70vh';
+    panel.style.maxHeight = 'min(70vh, 620px)';
     panel.style.overflowY = 'auto';
     panel.style.background = cfg.panelBackgroundColor || '#ffffff';
     panel.style.color = cfg.panelTextColor || '#111827';
     panel.style.padding = '12px';
     panel.style.borderRadius = '10px';
     panel.style.boxShadow = '0 8px 30px rgba(0,0,0,0.2)';
-    panel.style.position = 'absolute';
-    panel.style.top = '0';
-    panel.style[isRightSide ? 'right' : 'left'] = '12px';
+    panel.style.position = 'fixed';
+    panel.style.top = '50%';
+    panel.style.left = '50%';
+    panel.style.transform = 'translate(-50%, -50%)';
+    panel.style.zIndex = '2147483001';
     panel.style.fontFamily = 'Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+
+    var header = d.createElement('div');
+    header.style.display = 'flex';
+    header.style.alignItems = 'center';
+    header.style.justifyContent = 'space-between';
+    header.style.gap = '8px';
+    header.style.marginBottom = '10px';
 
     var title = d.createElement('h3');
     title.textContent = cfg.formTitle || 'Share your feedback';
-    title.style.margin = '0 0 10px';
+    title.style.margin = '0';
     title.style.fontSize = '16px';
+
+    var closeBtn = d.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.textContent = '✕';
+    closeBtn.setAttribute('aria-label', 'Close feedback form');
+    closeBtn.style.border = '0';
+    closeBtn.style.background = 'transparent';
+    closeBtn.style.color = panel.style.color;
+    closeBtn.style.fontSize = '18px';
+    closeBtn.style.lineHeight = '1';
+    closeBtn.style.cursor = 'pointer';
+    closeBtn.style.padding = '2px 4px';
 
     var message = d.createElement('div');
     message.style.display = 'none';
@@ -241,17 +277,36 @@
         });
     });
 
-    panel.appendChild(title);
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+    panel.appendChild(header);
     panel.appendChild(message);
     panel.appendChild(form);
 
+    function setOpen(nextOpen) {
+      panel.style.display = nextOpen ? 'block' : 'none';
+      overlay.style.display = nextOpen ? 'block' : 'none';
+      tab.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
+    }
+
     tab.addEventListener('click', function () {
-      var isOpen = panel.style.display === 'none';
-      panel.style.display = isOpen ? 'block' : 'none';
-      tab.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      setOpen(panel.style.display === 'none');
+    });
+
+    overlay.addEventListener('click', function () {
+      setOpen(false);
+    });
+
+    closeBtn.addEventListener('click', function () {
+      setOpen(false);
+    });
+
+    d.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') setOpen(false);
     });
 
     root.appendChild(tab);
+    root.appendChild(overlay);
     root.appendChild(panel);
     d.body.appendChild(root);
   }
