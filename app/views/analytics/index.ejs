@@ -52,10 +52,10 @@
 <div class="row g-3 mb-2">
   <% scorecards.forEach((card) => { %>
     <div class="col-12 col-sm-6 col-xl-3">
-      <div class="card h-100">
+        <div class="card h-100">
         <div class="card-body">
           <div class="text-muted small"><%= card.label %></div>
-          <div class="display-6 fw-semibold"><%= card.value.toLocaleString() %></div>
+          <div class="display-6 fw-semibold"><%= card.displayValue || card.value.toLocaleString() %></div>
           <div class="small text-secondary"><%= card.helper %></div>
         </div>
       </div>
