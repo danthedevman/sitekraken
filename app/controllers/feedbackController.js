@@ -30,7 +30,7 @@ function normalizeVerticalPosition(value) {
 
 function normalizeOffsetPx(value) {
   const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return 12;
+  if (!Number.isFinite(parsed)) return 0;
   return Math.min(200, Math.max(0, Math.round(parsed)));
 }
 
