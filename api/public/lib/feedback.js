@@ -53,7 +53,7 @@
     var verticalPosition = getVerticalPosition(cfg.verticalPosition);
     var offsetPx = getOffsetPx(cfg.offsetPx, 0);
 
-    root.style[side] = offsetPx + 'px';
+    root.style[side] = '0px';
     if (verticalPosition === 'top') {
       root.style.top = offsetPx + 'px';
     } else if (verticalPosition === 'middle') {
@@ -78,13 +78,13 @@
     tab.style.position = 'absolute';
     tab.style.top = '0';
     tab.style.whiteSpace = 'nowrap';
-    tab.style.transformOrigin = 'top left';
+    tab.style.transformOrigin = isRightSide ? 'top right' : 'top left';
     tab.style.boxShadow = '0 6px 20px rgba(0,0,0,0.2)';
     tab.style.fontFamily = 'Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
 
     if (isRightSide) {
       tab.style.right = '0';
-      tab.style.transform = 'translateY(-100%) rotate(90deg)';
+      tab.style.transform = 'rotate(90deg) translateY(-100%)';
     } else {
       tab.style.left = '0';
       tab.style.transform = 'rotate(-90deg) translateX(-100%)';
