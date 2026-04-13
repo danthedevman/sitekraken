@@ -252,7 +252,7 @@ export function defaultFeedbackConfig(overrides = {}) {
       offsetPx:
         Number.isFinite(Number(overrideConfig.offsetPx)) && Number(overrideConfig.offsetPx) >= 0
           ? Math.min(200, Math.round(Number(overrideConfig.offsetPx)))
-          : 12,
+          : 0,
       fields: Array.isArray(overrideConfig.fields) ? overrideConfig.fields : [],
       allowedDomains: Array.isArray(overrideConfig.allowedDomains)
         ? overrideConfig.allowedDomains

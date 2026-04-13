@@ -51,7 +51,7 @@
 
     var side = getSide(cfg.displaySide);
     var verticalPosition = getVerticalPosition(cfg.verticalPosition);
-    var offsetPx = getOffsetPx(cfg.offsetPx, 12);
+    var offsetPx = getOffsetPx(cfg.offsetPx, 0);
 
     root.style[side] = offsetPx + 'px';
     if (verticalPosition === 'top') {
