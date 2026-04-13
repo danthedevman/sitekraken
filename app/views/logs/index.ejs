@@ -9,6 +9,7 @@
   const rows = logs.map((log) => ({
     href: `/workspaces/${workspace._id}/logs/${log.id}`,
     values: {
+      id: log.id,
       createdAt: log.createdAtIso,
       level: log.level,
       type: log.type,
@@ -28,6 +29,16 @@
   columns,
   rows,
   defaultPageSize: tableState.pageSize,
+  selectableRows: true,
+  selectionValueKey: 'id',
+  bulkActions: {
+    delete: {
+      action: `/workspaces/${workspace._id}/logs/bulk-delete`,
+      method: 'POST',
+      inputName: 'ids',
+      confirmMessage: 'Delete selected logs?'
+    }
+  },
   serverPagination: {
     page: tableState.page,
     totalPages: tableState.totalPages,

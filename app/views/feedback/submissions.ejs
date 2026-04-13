@@ -1,41 +1,52 @@
+<%- include('../partials/tabLinks', { workspace, activeTab: 'submissions', tabLinks }) %>
+
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4 class="m-0">Feedback submissions</h4>
-  <a href="/workspaces/<%= workspace._id %>/feedback" class="btn btn-outline-secondary btn-sm">Back to form settings</a>
+  <a href="/workspaces/<%= workspace._id %>/feedback/confirmation" class="btn btn-outline-secondary btn-sm">Preview confirmation</a>
 </div>
 
-<div class="card">
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table table-sm mb-0">
-        <thead>
-          <tr>
-            <th>Submitted at</th>
-            <th>Page</th>
-            <th>Responses</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% if (!submissions.length) { %>
-            <tr><td colspan="3" class="text-center text-muted py-4">No feedback submissions yet.</td></tr>
-          <% } %>
-          <% submissions.forEach((item) => { %>
-            <tr>
-              <td style="min-width: 180px;"><%= item.createdAt %></td>
-              <td class="text-break"><%= item.pageUrl || '—' %></td>
-              <td>
-                <% const entries = Object.entries(item.payload || {}); %>
-                <% if (!entries.length) { %>
-                  <span class="text-muted">—</span>
-                <% } else { %>
-                  <% entries.forEach(([key, value]) => { %>
-                    <div><strong><%= key %>:</strong> <%= Array.isArray(value) ? value.join(', ') : value %></div>
-                  <% }) %>
-                <% } %>
-              </td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
+<%
+  const columns = [
+    { key: 'createdAt', label: 'Submitted at', sortType: 'date' },
+    { key: 'pageUrl', label: 'Page', sortType: 'string' },
+    { key: 'responses', label: 'Responses', sortable: false },
+  ];
+
+  const rows = submissions.map((item) => {
+    const entries = Object.entries(item.payload || {});
+    return {
+      href: `/workspaces/${workspace._id}/feedback/submissions/${item.id}`,
+      values: {
+        id: item.id,
+        createdAt: item.createdAt,
+        pageUrl: item.pageUrl || '',
+      },
+      cells: {
+        createdAt: item.createdAt,
+        pageUrl: item.pageUrl || '—',
+        responses: entries.length
+          ? entries
+              .map(([key, value]) => `<div><strong>${key}:</strong> ${Array.isArray(value) ? value.join(', ') : value}</div>`)
+              .join('')
+          : '<span class="text-muted">—</span>',
+      }
+    };
+  });
+%>
+
+<%- include('../partials/bootstrapTableWidget', {
+  tableId: 'feedback-submissions-table',
+  columns,
+  rows,
+  defaultPageSize: 20,
+  selectableRows: true,
+  selectionValueKey: 'id',
+  bulkActions: {
+    delete: {
+      action: `/workspaces/${workspace._id}/feedback/submissions/bulk-delete`,
+      method: 'POST',
+      inputName: 'ids',
+      confirmMessage: 'Delete selected submissions?'
+    }
+  }
+}) %>

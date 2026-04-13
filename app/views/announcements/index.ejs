@@ -38,6 +38,7 @@
 
   const rows = items.map((item) => ({
     values: {
+      id: item.id,
       title: item.title || '',
       message: item.message || '',
       status: item.status || 'draft',
@@ -75,5 +76,15 @@
   tableId: 'banners-table',
   columns,
   rows,
-  defaultPageSize: 20
+  defaultPageSize: 20,
+  selectableRows: true,
+  selectionValueKey: 'id',
+  bulkActions: {
+    delete: {
+      action: `/workspaces/${workspace._id}/announcements/bulk-delete`,
+      method: 'POST',
+      inputName: 'ids',
+      confirmMessage: 'Delete selected banners?'
+    }
+  }
 }) %>

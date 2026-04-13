@@ -1,3 +1,5 @@
+<%- include('../partials/tabLinks', { workspace, activeTab: 'configuration', tabLinks }) %>
+
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4 class="m-0">Feedback form builder</h4>
   <span class="badge <%= feedback?.enabled ? 'text-bg-success' : 'text-bg-secondary' %>">
@@ -21,7 +23,6 @@
 </div>
 
 <div class="mb-3 d-flex gap-2">
-  <a href="/workspaces/<%= workspace._id %>/feedback/submissions" class="btn btn-outline-primary btn-sm">View submissions</a>
   <a href="/workspaces/<%= workspace._id %>/feedback/confirmation" class="btn btn-outline-secondary btn-sm">Preview confirmation</a>
 </div>
 

@@ -122,6 +122,22 @@ function normalizeFieldRows(body = {}) {
   return fields;
 }
 
+function buildFeedbackTabLinks(workspaceId) {
+  return [
+    { key: 'configuration', label: 'Configuration', href: `/workspaces/${workspaceId}/feedback` },
+    { key: 'submissions', label: 'Submissions', href: `/workspaces/${workspaceId}/feedback/submissions` },
+  ];
+}
+
+function normalizeSubmissionIds(value) {
+  const ids = Array.isArray(value) ? value : [value];
+  return [...new Set(
+    ids
+      .map((id) => String(id || '').trim())
+      .filter((id) => id && ObjectId.isValid(id))
+  )];
+}
+
 export async function index(req, res) {
   const workspace = await hydrateWorkspace(req);
   if (!workspace) {
@@ -132,6 +148,7 @@ export async function index(req, res) {
   res.render('feedback/index', {
     workspace,
     active: 'feedback',
+    tabLinks: buildFeedbackTabLinks(workspace._id),
     feedback: workspace.feedback || {},
     fields: Array.isArray(workspace.feedback?.config?.fields) ? workspace.feedback.config.fields : [],
   });
@@ -211,6 +228,7 @@ export async function submissions(req, res) {
   res.render('feedback/submissions', {
     workspace,
     active: 'feedback',
+    tabLinks: buildFeedbackTabLinks(workspace._id),
     submissions: feedbackSubmissions.map((entry) => ({
       id: String(entry._id),
       createdAt: entry.createdAt ? new Date(entry.createdAt).toLocaleString() : '—',
@@ -218,6 +236,70 @@ export async function submissions(req, res) {
       pageUrl: String(entry.pageUrl || ''),
     })),
   });
+}
+
+export async function showSubmission(req, res) {
+  const workspace = await hydrateWorkspace(req);
+
+  if (!workspace) {
+    req.flash('error', 'Workspace not found');
+    return res.redirect('/workspaces');
+  }
+
+  const submissionId = String(req.params.submissionId || '').trim();
+  if (!ObjectId.isValid(submissionId)) {
+    req.flash('error', 'Submission not found');
+    return res.redirect(`/workspaces/${workspace._id}/feedback/submissions`);
+  }
+
+  const db = getDB();
+  const submission = await db.collection('website_feedback_submissions').findOne({
+    _id: new ObjectId(submissionId),
+    workspaceId: new ObjectId(workspace._id),
+  });
+
+  if (!submission) {
+    req.flash('error', 'Submission not found');
+    return res.redirect(`/workspaces/${workspace._id}/feedback/submissions`);
+  }
+
+  return res.render('feedback/submission-show', {
+    workspace,
+    active: 'feedback',
+    tabLinks: buildFeedbackTabLinks(workspace._id),
+    submission: {
+      id: String(submission._id),
+      createdAt: submission.createdAt ? new Date(submission.createdAt).toLocaleString() : '—',
+      pageUrl: String(submission.pageUrl || ''),
+      payload: submission.payload && typeof submission.payload === 'object' ? submission.payload : {},
+    }
+  });
+}
+
+export async function bulkDestroySubmissions(req, res) {
+  const workspace = await hydrateWorkspace(req);
+  if (!workspace) {
+    req.flash('error', 'Workspace not found');
+    return res.redirect('/workspaces');
+  }
+
+  const submissionIds = normalizeSubmissionIds(req.body.ids);
+
+  if (!submissionIds.length) {
+    req.flash('error', 'No submissions selected');
+    return res.redirect(`/workspaces/${workspace._id}/feedback/submissions`);
+  }
+
+  const objectIds = submissionIds.map((id) => new ObjectId(id));
+  const db = getDB();
+  const result = await db.collection('website_feedback_submissions').deleteMany({
+    _id: { $in: objectIds },
+    workspaceId: new ObjectId(workspace._id),
+  });
+
+  const deletedCount = Number(result.deletedCount || 0);
+  req.flash('success', `Deleted ${deletedCount} submission${deletedCount === 1 ? '' : 's'}.`);
+  return res.redirect(`/workspaces/${workspace._id}/feedback/submissions`);
 }
 
 export async function confirmation(req, res) {
