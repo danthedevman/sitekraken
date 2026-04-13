@@ -1,0 +1,119 @@
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="m-0">Banners</h4>
+  <span class="badge <%= banners?.enabled ? 'text-bg-success' : 'text-bg-secondary' %>">
+    <%= banners?.enabled ? 'Enabled' : 'Disabled' %>
+  </span>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <form method="POST" action="/workspaces/<%= workspace._id %>/announcements" class="row g-3">
+      <div class="col-12 col-md-4 form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="enabled" name="enabled" <%= banners?.enabled ? 'checked' : '' %> />
+        <label class="form-check-label" for="enabled">Enable banner library</label>
+      </div>
+
+      <div class="col-12 col-md-4">
+        <label for="status" class="form-label">Publish state</label>
+        <select id="status" name="status" class="form-select">
+          <option value="draft" <%= config?.status === 'draft' ? 'selected' : '' %>>Draft</option>
+          <option value="scheduled" <%= config?.status === 'scheduled' ? 'selected' : '' %>>Scheduled</option>
+          <option value="published" <%= config?.status === 'published' ? 'selected' : '' %>>Published now</option>
+        </select>
+      </div>
+
+      <div class="col-12 col-md-4">
+        <label for="mode" class="form-label">Banner type</label>
+        <select id="mode" name="mode" class="form-select">
+          <option value="top" <%= config?.type === 'top' ? 'selected' : '' %>>Top banner</option>
+          <option value="bottom" <%= config?.type === 'bottom' ? 'selected' : '' %>>Bottom banner</option>
+          <option value="modal" <%= config?.type === 'modal' ? 'selected' : '' %>>Modal</option>
+        </select>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label for="title" class="form-label">Title (modal)</label>
+        <input id="title" name="title" class="form-control" value="<%= config?.title || '' %>" />
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label for="confirmLabel" class="form-label">Button label</label>
+        <input id="confirmLabel" name="confirmLabel" class="form-control" value="<%= config?.confirmLabel || 'Okay' %>" />
+      </div>
+
+      <div class="col-12">
+        <label for="message" class="form-label">Message</label>
+        <textarea id="message" name="message" rows="4" class="form-control"><%= config?.message || '' %></textarea>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <label for="scheduleStartAt" class="form-label">Schedule start (UTC)</label>
+        <input id="scheduleStartAt" type="datetime-local" name="scheduleStartAt" class="form-control" value="<%= config?.scheduleStartAt ? new Date(config.scheduleStartAt).toISOString().slice(0,16) : '' %>" />
+      </div>
+      <div class="col-12 col-md-6">
+        <label for="scheduleEndAt" class="form-label">Schedule end (UTC)</label>
+        <input id="scheduleEndAt" type="datetime-local" name="scheduleEndAt" class="form-control" value="<%= config?.scheduleEndAt ? new Date(config.scheduleEndAt).toISOString().slice(0,16) : '' %>" />
+      </div>
+
+      <div class="col-6 col-md-3">
+        <label class="form-label" for="backgroundColor">Background</label>
+        <input id="backgroundColor" name="backgroundColor" type="color" class="form-control form-control-color" value="<%= config?.backgroundColor || '#1f2937' %>">
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label" for="textColor">Text</label>
+        <input id="textColor" name="textColor" type="color" class="form-control form-control-color" value="<%= config?.textColor || '#ffffff' %>">
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label" for="buttonColor">Button bg</label>
+        <input id="buttonColor" name="buttonColor" type="color" class="form-control form-control-color" value="<%= config?.buttonColor || '#ffffff' %>">
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label" for="buttonTextColor">Button text</label>
+        <input id="buttonTextColor" name="buttonTextColor" type="color" class="form-control form-control-color" value="<%= config?.buttonTextColor || '#111827' %>">
+      </div>
+
+      <div class="col-12 col-md-3">
+        <label for="autoHideMs" class="form-label">Auto-hide (ms)</label>
+        <input id="autoHideMs" name="autoHideMs" type="number" min="0" class="form-control" value="<%= config?.autoHideMs ?? 0 %>" />
+      </div>
+      <div class="col-12 col-md-3">
+        <label for="borderRadius" class="form-label">Border radius</label>
+        <input id="borderRadius" name="borderRadius" type="number" min="0" class="form-control" value="<%= config?.borderRadius ?? 8 %>" />
+      </div>
+      <div class="col-12 col-md-3">
+        <label for="zIndex" class="form-label">z-index</label>
+        <input id="zIndex" name="zIndex" type="number" min="10" class="form-control" value="<%= config?.zIndex ?? 2147483000 %>" />
+      </div>
+      <div class="col-12 col-md-3">
+        <label for="position" class="form-label">Position</label>
+        <select id="position" name="position" class="form-select">
+          <option value="top" <%= config?.position === 'top' ? 'selected' : '' %>>Top</option>
+          <option value="bottom" <%= config?.position === 'bottom' ? 'selected' : '' %>>Bottom</option>
+        </select>
+      </div>
+
+      <div class="col-12 d-flex gap-4 flex-wrap">
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="dismissible" name="dismissible" <%= config?.dismissible ? 'checked' : '' %> />
+          <label class="form-check-label" for="dismissible">Dismissible</label>
+        </div>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="showOncePerSession" name="showOncePerSession" <%= config?.showOncePerSession ? 'checked' : '' %> />
+          <label class="form-check-label" for="showOncePerSession">Show once per session</label>
+        </div>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="fullWidth" name="fullWidth" <%= config?.fullWidth ? 'checked' : '' %> />
+          <label class="form-check-label" for="fullWidth">Full width</label>
+        </div>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="shadow" name="shadow" <%= config?.shadow ? 'checked' : '' %> />
+          <label class="form-check-label" for="shadow">Shadow</label>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <button class="btn btn-primary">Save banner settings</button>
+      </div>
+    </form>
+  </div>
+</div>

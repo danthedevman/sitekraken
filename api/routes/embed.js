@@ -33,6 +33,7 @@ function buildModulesFromWorkspace(workspace, request) {
   const chatModule = workspace.chatbot || {};
   const analyticsModule = workspace.analytics || {};
   const logsModule = workspace.logs || {};
+  const bannersModule = workspace.banners || {};
   const allowedDomains = Array.isArray(workspace.allowedDomains)
     ? workspace.allowedDomains
     : [];
@@ -40,6 +41,7 @@ function buildModulesFromWorkspace(workspace, request) {
   const baseUrl = getRequestBaseUrl(request);
   const analyticsScriptUrl = analyticsModule.scriptUrl || `${baseUrl}/public/lib/analytics.js`;
   const logsScriptUrl = logsModule.scriptUrl || `${baseUrl}/public/lib/logs.js`;
+  const bannersScriptUrl = bannersModule.scriptUrl || `${baseUrl}/public/lib/banners.js`;
   const analyticsApiUrl = getOriginFromUrl(
     analyticsModule?.config?.apiUrl,
     getOriginFromUrl(analyticsScriptUrl, baseUrl)
@@ -85,7 +87,20 @@ function buildModulesFromWorkspace(workspace, request) {
         allowedDomains,
         apiUrl: logsApiUrl
       }
-    }
+    },
+    {
+      ...bannersModule,
+      name: bannersModule.name || "banners",
+      scriptUrl: bannersScriptUrl,
+      module:
+        typeof bannersModule.module === "boolean" ? bannersModule.module : false,
+      enabled:
+        typeof bannersModule.enabled === "boolean" ? bannersModule.enabled : true,
+      config: {
+        ...(bannersModule.config || {}),
+        allowedDomains
+      }
+    },
   ];
 }
 
