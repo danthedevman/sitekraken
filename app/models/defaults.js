@@ -211,6 +211,7 @@ export function defaultBannersConfig(overrides = {}) {
       borderRadius:
         typeof overrideConfig.borderRadius === "number" ? overrideConfig.borderRadius : 8,
       zIndex: typeof overrideConfig.zIndex === "number" ? overrideConfig.zIndex : 2147483000,
+      items: Array.isArray(overrideConfig.items) ? overrideConfig.items : [],
       allowedDomains: Array.isArray(overrideConfig.allowedDomains)
         ? overrideConfig.allowedDomains
         : Array.isArray(overrides.allowedDomains)

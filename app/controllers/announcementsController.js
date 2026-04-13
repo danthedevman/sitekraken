@@ -27,6 +27,57 @@ function sanitizeHexColor(value, fallback) {
   return fallback;
 }
 
+function normalizeBannerItem(raw = {}) {
+  const status = String(raw.status || 'draft');
+  const type = String(raw.type || 'top');
+  const position = String(raw.position || 'top');
+
+  return {
+    id: String(raw.id || new ObjectId().toString()),
+    type: ['top', 'bottom', 'modal'].includes(type) ? type : 'top',
+    position: ['top', 'bottom'].includes(position) ? position : 'top',
+    status: ['draft', 'scheduled', 'published'].includes(status) ? status : 'draft',
+    title: String(raw.title || '').trim(),
+    message: String(raw.message || '').trim(),
+    confirmLabel: String(raw.confirmLabel || '').trim() || 'Okay',
+    dismissible: typeof raw.dismissible === 'boolean' ? raw.dismissible : parseBoolean(raw.dismissible),
+    showOncePerSession:
+      typeof raw.showOncePerSession === 'boolean'
+        ? raw.showOncePerSession
+        : parseBoolean(raw.showOncePerSession),
+    fullWidth: typeof raw.fullWidth === 'boolean' ? raw.fullWidth : parseBoolean(raw.fullWidth),
+    shadow: typeof raw.shadow === 'boolean' ? raw.shadow : parseBoolean(raw.shadow),
+    autoHideMs: Math.max(0, parseNumber(raw.autoHideMs, 0)),
+    borderRadius: Math.max(0, parseNumber(raw.borderRadius, 8)),
+    zIndex: Math.max(10, parseNumber(raw.zIndex, 2147483000)),
+    backgroundColor: sanitizeHexColor(raw.backgroundColor, '#1f2937'),
+    textColor: sanitizeHexColor(raw.textColor, '#ffffff'),
+    buttonColor: sanitizeHexColor(raw.buttonColor, '#ffffff'),
+    buttonTextColor: sanitizeHexColor(raw.buttonTextColor, '#111827'),
+    scheduleStartAt: parseDateTime(raw.scheduleStartAt),
+    scheduleEndAt: parseDateTime(raw.scheduleEndAt),
+    createdAt: raw.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function getBannerItems(banners = {}) {
+  if (Array.isArray(banners.items) && banners.items.length) {
+    return banners.items.map((item) => normalizeBannerItem(item));
+  }
+
+  if (banners?.config?.message) {
+    return [
+      normalizeBannerItem({
+        ...banners.config,
+        id: banners.config.id || new ObjectId().toString(),
+      }),
+    ];
+  }
+
+  return [];
+}
+
 async function hydrateWorkspace(req) {
   const { workspaces } = getCollections();
   const workspace = req.workspace;
@@ -61,11 +112,20 @@ export async function index(req, res) {
     return res.redirect('/workspaces');
   }
 
+  const banners = workspace.banners || {};
+  const items = getBannerItems(banners).sort((a, b) => {
+    return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
+  });
+
+  const editId = String(req.query.edit || '').trim();
+  const selected = items.find((item) => item.id === editId) || null;
+
   res.render('announcements/index', {
     workspace,
     active: 'announcements',
-    banners: workspace.banners || {},
-    config: workspace.banners?.config || {}
+    banners,
+    items,
+    selected,
   });
 }
 
@@ -78,35 +138,44 @@ export async function update(req, res) {
   }
 
   const existing = workspace.banners || {};
-  const existingConfig = existing.config || {};
+  const existingItems = getBannerItems(existing);
+  const intent = String(req.body.intent || 'create');
 
-  const mode = String(req.body.mode || existingConfig.type || 'top');
-  const status = String(req.body.status || existingConfig.status || 'draft');
+  let items = existingItems;
+  let flashMessage = 'Banner configuration saved.';
 
-  const config = {
-    ...existingConfig,
-    type: ['top', 'bottom', 'modal'].includes(mode) ? mode : 'top',
-    position: ['top', 'bottom'].includes(String(req.body.position || existingConfig.position || 'top'))
-      ? String(req.body.position || existingConfig.position || 'top')
-      : 'top',
-    status: ['draft', 'scheduled', 'published'].includes(status) ? status : 'draft',
-    title: String(req.body.title || '').trim(),
-    message: String(req.body.message || '').trim(),
-    confirmLabel: String(req.body.confirmLabel || '').trim() || 'Okay',
-    dismissible: parseBoolean(req.body.dismissible),
-    showOncePerSession: parseBoolean(req.body.showOncePerSession),
-    fullWidth: parseBoolean(req.body.fullWidth),
-    shadow: parseBoolean(req.body.shadow),
-    autoHideMs: Math.max(0, parseNumber(req.body.autoHideMs, 0)),
-    borderRadius: Math.max(0, parseNumber(req.body.borderRadius, 8)),
-    zIndex: Math.max(10, parseNumber(req.body.zIndex, 2147483000)),
-    backgroundColor: sanitizeHexColor(req.body.backgroundColor, '#1f2937'),
-    textColor: sanitizeHexColor(req.body.textColor, '#ffffff'),
-    buttonColor: sanitizeHexColor(req.body.buttonColor, '#ffffff'),
-    buttonTextColor: sanitizeHexColor(req.body.buttonTextColor, '#111827'),
-    scheduleStartAt: parseDateTime(req.body.scheduleStartAt),
-    scheduleEndAt: parseDateTime(req.body.scheduleEndAt),
-  };
+  if (intent === 'delete') {
+    const bannerId = String(req.body.bannerId || '');
+    items = existingItems.filter((item) => item.id !== bannerId);
+    flashMessage = 'Banner deleted.';
+  } else if (intent === 'set-status') {
+    const bannerId = String(req.body.bannerId || '');
+    const nextStatus = String(req.body.nextStatus || 'draft');
+    items = existingItems.map((item) => {
+      if (item.id !== bannerId) return item;
+      return normalizeBannerItem({ ...item, status: nextStatus, updatedAt: new Date().toISOString() });
+    });
+    flashMessage = 'Banner status updated.';
+  } else {
+    const incoming = normalizeBannerItem({
+      ...req.body,
+      id: req.body.bannerId || new ObjectId().toString(),
+      createdAt:
+        req.body.bannerId && existingItems.find((item) => item.id === req.body.bannerId)?.createdAt
+          ? existingItems.find((item) => item.id === req.body.bannerId).createdAt
+          : new Date().toISOString(),
+    });
+
+    if (String(req.body.bannerId || '').trim()) {
+      items = existingItems.map((item) => (item.id === incoming.id ? incoming : item));
+      flashMessage = 'Banner updated.';
+    } else {
+      items = [incoming, ...existingItems];
+      flashMessage = 'Banner created.';
+    }
+  }
+
+  const primaryConfig = items[0] || {};
 
   await workspaces.updateOne(
     { _id: new ObjectId(workspace._id) },
@@ -115,16 +184,25 @@ export async function update(req, res) {
         banners: {
           ...existing,
           name: 'banners',
-          enabled: parseBoolean(req.body.enabled),
+          enabled:
+            intent === 'settings'
+              ? parseBoolean(req.body.enabled)
+              : typeof req.body.enabled === 'undefined'
+                ? Boolean(existing.enabled)
+                : parseBoolean(req.body.enabled),
           scriptUrl: existing.scriptUrl || 'https://api.sitekraken.com/public/lib/banners.js',
           module: typeof existing.module === 'boolean' ? existing.module : false,
-          config,
+          items,
+          config: {
+            ...primaryConfig,
+            allowedDomains: existing?.config?.allowedDomains || [],
+          },
         },
         updatedAt: new Date()
       }
     }
   );
 
-  req.flash('success', 'Banner configuration saved.');
+  req.flash('success', flashMessage);
   return res.redirect(`/workspaces/${workspace._id}/announcements`);
 }
