@@ -18,6 +18,22 @@ function cleanString(value, max = 180) {
   return String(value || '').trim().slice(0, max);
 }
 
+function normalizeDisplaySide(value) {
+  return cleanString(value, 10).toLowerCase() === 'left' ? 'left' : 'right';
+}
+
+function normalizeVerticalPosition(value) {
+  const position = cleanString(value, 12).toLowerCase();
+  if (position === 'top' || position === 'middle') return position;
+  return 'bottom';
+}
+
+function normalizeOffsetPx(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 12;
+  return Math.min(200, Math.max(0, Math.round(parsed)));
+}
+
 function normalizeFieldType(value) {
   const type = cleanString(value, 30).toLowerCase();
   if (['text', 'multiline', 'select', 'email'].includes(type)) return type;
@@ -160,6 +176,9 @@ export async function update(req, res) {
             panelTextColor: sanitizeHexColor(req.body.panelTextColor, '#111827'),
             buttonBackgroundColor: sanitizeHexColor(req.body.buttonBackgroundColor, '#111827'),
             buttonTextColor: sanitizeHexColor(req.body.buttonTextColor, '#ffffff'),
+            displaySide: normalizeDisplaySide(req.body.displaySide),
+            verticalPosition: normalizeVerticalPosition(req.body.verticalPosition),
+            offsetPx: normalizeOffsetPx(req.body.offsetPx),
             fields,
             allowedDomains: Array.isArray(workspace.allowedDomains) ? workspace.allowedDomains : [],
           },

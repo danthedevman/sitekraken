@@ -24,47 +24,78 @@
   var apiBase = cfg.apiUrl || (script && script.src ? new URL(script.src, w.location.href).origin : w.location.origin);
   var apiKey = (script && script.getAttribute('data-api-key')) || '';
 
-  var root = d.createElement('div');
-  root.style.position = 'fixed';
-  root.style.right = '12px';
-  root.style.bottom = '12px';
-  root.style.zIndex = '2147482999';
+  function getSide(value) {
+    var side = String(value || '').toLowerCase();
+    return side === 'left' ? 'left' : 'right';
+  }
 
-  var tab = d.createElement('button');
-  tab.type = 'button';
-  tab.textContent = cfg.tabLabel || 'Feedback';
-  tab.style.border = '0';
-  tab.style.padding = '10px 14px';
-  tab.style.borderRadius = '10px';
-  tab.style.cursor = 'pointer';
-  tab.style.background = cfg.tabBackgroundColor || '#111827';
-  tab.style.color = cfg.tabTextColor || '#ffffff';
+  function getVerticalPosition(value) {
+    var pos = String(value || '').toLowerCase();
+    return pos === 'top' || pos === 'middle' ? pos : 'bottom';
+  }
 
-  var panel = d.createElement('div');
-  panel.style.display = 'none';
-  panel.style.width = 'min(360px, calc(100vw - 24px))';
-  panel.style.maxHeight = '70vh';
-  panel.style.overflowY = 'auto';
-  panel.style.background = cfg.panelBackgroundColor || '#ffffff';
-  panel.style.color = cfg.panelTextColor || '#111827';
-  panel.style.padding = '12px';
-  panel.style.borderRadius = '10px';
-  panel.style.boxShadow = '0 8px 30px rgba(0,0,0,0.2)';
-  panel.style.marginTop = '8px';
-  panel.style.fontFamily = 'Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+  function getOffsetPx(value, fallback) {
+    var parsed = Number(value);
+    if (!Number.isFinite(parsed)) return fallback;
+    return Math.max(0, Math.min(200, Math.round(parsed)));
+  }
 
-  var title = d.createElement('h3');
-  title.textContent = cfg.formTitle || 'Share your feedback';
-  title.style.margin = '0 0 10px';
-  title.style.fontSize = '16px';
+  function mountWidget() {
+    if (!d.body) return;
 
-  var message = d.createElement('div');
-  message.style.display = 'none';
-  message.style.marginBottom = '10px';
+    var root = d.createElement('div');
+    root.style.position = 'fixed';
+    root.style.zIndex = '2147482999';
 
-  var form = d.createElement('form');
-  form.style.display = 'grid';
-  form.style.gap = '10px';
+    var side = getSide(cfg.displaySide);
+    var verticalPosition = getVerticalPosition(cfg.verticalPosition);
+    var offsetPx = getOffsetPx(cfg.offsetPx, 12);
+
+    root.style[side] = offsetPx + 'px';
+    if (verticalPosition === 'top') {
+      root.style.top = offsetPx + 'px';
+    } else if (verticalPosition === 'middle') {
+      root.style.top = '50%';
+      root.style.transform = 'translateY(-50%)';
+    } else {
+      root.style.bottom = offsetPx + 'px';
+    }
+
+    var tab = d.createElement('button');
+    tab.type = 'button';
+    tab.textContent = cfg.tabLabel || 'Feedback';
+    tab.style.border = '0';
+    tab.style.padding = '10px 14px';
+    tab.style.borderRadius = '10px';
+    tab.style.cursor = 'pointer';
+    tab.style.background = cfg.tabBackgroundColor || '#111827';
+    tab.style.color = cfg.tabTextColor || '#ffffff';
+
+    var panel = d.createElement('div');
+    panel.style.display = 'none';
+    panel.style.width = 'min(360px, calc(100vw - 24px))';
+    panel.style.maxHeight = '70vh';
+    panel.style.overflowY = 'auto';
+    panel.style.background = cfg.panelBackgroundColor || '#ffffff';
+    panel.style.color = cfg.panelTextColor || '#111827';
+    panel.style.padding = '12px';
+    panel.style.borderRadius = '10px';
+    panel.style.boxShadow = '0 8px 30px rgba(0,0,0,0.2)';
+    panel.style.marginTop = '8px';
+    panel.style.fontFamily = 'Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+
+    var title = d.createElement('h3');
+    title.textContent = cfg.formTitle || 'Share your feedback';
+    title.style.margin = '0 0 10px';
+    title.style.fontSize = '16px';
+
+    var message = d.createElement('div');
+    message.style.display = 'none';
+    message.style.marginBottom = '10px';
+
+    var form = d.createElement('form');
+    form.style.display = 'grid';
+    form.style.gap = '10px';
 
   function createField(field) {
     var wrap = d.createElement('label');
@@ -117,87 +148,94 @@
     return wrap;
   }
 
-  fields.forEach(function (field) {
-    form.appendChild(createField(field));
-  });
-
-  var submit = d.createElement('button');
-  submit.type = 'submit';
-  submit.textContent = cfg.submitLabel || 'Send feedback';
-  submit.style.border = '0';
-  submit.style.padding = '10px 12px';
-  submit.style.borderRadius = '8px';
-  submit.style.cursor = 'pointer';
-  submit.style.background = cfg.buttonBackgroundColor || '#111827';
-  submit.style.color = cfg.buttonTextColor || '#ffffff';
-
-  form.appendChild(submit);
-
-  function setMessage(text, success) {
-    message.style.display = 'block';
-    message.textContent = text;
-    message.style.color = success ? '#065f46' : '#b91c1c';
-  }
-
-  form.addEventListener('submit', function (event) {
-    event.preventDefault();
-    message.style.display = 'none';
-
-    var answers = {};
-    var invalid = false;
-
     fields.forEach(function (field) {
-      var el = form.elements[field.id];
-      var value = el && typeof el.value === 'string' ? el.value.trim() : '';
-      if (field.required && !value) invalid = true;
-      answers[field.id] = value;
+      form.appendChild(createField(field));
     });
 
-    if (invalid) {
-      setMessage('Please fill in required fields.', false);
-      return;
+    var submit = d.createElement('button');
+    submit.type = 'submit';
+    submit.textContent = cfg.submitLabel || 'Send feedback';
+    submit.style.border = '0';
+    submit.style.padding = '10px 12px';
+    submit.style.borderRadius = '8px';
+    submit.style.cursor = 'pointer';
+    submit.style.background = cfg.buttonBackgroundColor || '#111827';
+    submit.style.color = cfg.buttonTextColor || '#ffffff';
+
+    form.appendChild(submit);
+
+    function setMessage(text, success) {
+      message.style.display = 'block';
+      message.textContent = text;
+      message.style.color = success ? '#065f46' : '#b91c1c';
     }
 
-    fetch(new URL('/api/feedback/submissions', apiBase).toString(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-      },
-      body: JSON.stringify({
-        apiKey: apiKey,
-        pageUrl: w.location.href,
-        answers: answers,
-      }),
-    })
-      .then(function (res) {
-        return res.json().then(function (body) {
-          if (!res.ok) {
-            throw new Error(body && body.error ? body.error : 'Unable to submit feedback.');
-          }
-          return body;
-        });
-      })
-      .then(function (body) {
-        form.reset();
-        var titleText = body.confirmationTitle || cfg.confirmationTitle || 'Thanks for your feedback';
-        var messageText = body.confirmationMessage || cfg.confirmationMessage || 'Your response has been submitted.';
-        setMessage(titleText + ': ' + messageText, true);
-      })
-      .catch(function (error) {
-        setMessage(error.message || 'Unable to submit feedback.', false);
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      message.style.display = 'none';
+
+      var answers = {};
+      var invalid = false;
+
+      fields.forEach(function (field) {
+        var el = form.elements[field.id];
+        var value = el && typeof el.value === 'string' ? el.value.trim() : '';
+        if (field.required && !value) invalid = true;
+        answers[field.id] = value;
       });
-  });
 
-  panel.appendChild(title);
-  panel.appendChild(message);
-  panel.appendChild(form);
+      if (invalid) {
+        setMessage('Please fill in required fields.', false);
+        return;
+      }
 
-  tab.addEventListener('click', function () {
-    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-  });
+      fetch(new URL('/api/feedback/submissions', apiBase).toString(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+        },
+        body: JSON.stringify({
+          apiKey: apiKey,
+          pageUrl: w.location.href,
+          answers: answers,
+        }),
+      })
+        .then(function (res) {
+          return res.json().then(function (body) {
+            if (!res.ok) {
+              throw new Error(body && body.error ? body.error : 'Unable to submit feedback.');
+            }
+            return body;
+          });
+        })
+        .then(function (body) {
+          form.reset();
+          var titleText = body.confirmationTitle || cfg.confirmationTitle || 'Thanks for your feedback';
+          var messageText = body.confirmationMessage || cfg.confirmationMessage || 'Your response has been submitted.';
+          setMessage(titleText + ': ' + messageText, true);
+        })
+        .catch(function (error) {
+          setMessage(error.message || 'Unable to submit feedback.', false);
+        });
+    });
 
-  root.appendChild(tab);
-  root.appendChild(panel);
-  d.body.appendChild(root);
+    panel.appendChild(title);
+    panel.appendChild(message);
+    panel.appendChild(form);
+
+    tab.addEventListener('click', function () {
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    });
+
+    root.appendChild(tab);
+    root.appendChild(panel);
+    d.body.appendChild(root);
+  }
+
+  if (d.readyState === 'loading') {
+    d.addEventListener('DOMContentLoaded', mountWidget, { once: true });
+  } else {
+    mountWidget();
+  }
 })(window, document);
