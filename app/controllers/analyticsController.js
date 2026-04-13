@@ -62,6 +62,8 @@ function buildDateRange(startInput, endInput) {
       endDate: formatDateInput(endDate)
     }
   };
+}
+
 function formatDuration(seconds) {
   const safeSeconds = Math.max(0, Math.round(Number(seconds) || 0));
   const minutes = Math.floor(safeSeconds / 60);
