@@ -114,6 +114,8 @@ export async function index(req, res) {
     req.query.startDate,
     req.query.endDate
   );
+  const now = new Date();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const workspaceId = new ObjectId(workspace._id);
   const createdAtMatch = { $gte: startDate, $lt: endExclusive };
 
