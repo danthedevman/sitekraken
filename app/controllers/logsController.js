@@ -43,6 +43,7 @@ async function hydrateWorkspace(req) {
           chatbot: hydratedWorkspace.chatbot,
           analytics: hydratedWorkspace.analytics,
           logs: hydratedWorkspace.logs,
+          banners: hydratedWorkspace.banners,
           allowedDomains: hydratedWorkspace.allowedDomains,
           updatedAt: new Date(),
         },

@@ -141,7 +141,6 @@ export function defaultAnalyticsConfig(overrides = {}) {
   };
 }
 
-
 export function defaultLogsConfig(overrides = {}) {
   const overrideConfig =
     overrides && typeof overrides.config === "object" ? overrides.config : {};
@@ -170,6 +169,57 @@ export function defaultLogsConfig(overrides = {}) {
   };
 }
 
+export function defaultBannersConfig(overrides = {}) {
+  const overrideConfig =
+    overrides && typeof overrides.config === "object" ? overrides.config : {};
+
+  return {
+    name: overrides.name || "banners",
+    enabled: typeof overrides.enabled === "boolean" ? overrides.enabled : true,
+    scriptUrl:
+      overrides.scriptUrl || "https://api.sitekraken.com/public/lib/banners.js",
+    module: typeof overrides.module === "boolean" ? overrides.module : false,
+    config: {
+      type: overrideConfig.type || "top",
+      status: overrideConfig.status || "draft",
+      title: overrideConfig.title || "",
+      message: overrideConfig.message || "",
+      confirmLabel: overrideConfig.confirmLabel || "Okay",
+      dismissible:
+        typeof overrideConfig.dismissible === "boolean"
+          ? overrideConfig.dismissible
+          : true,
+      autoHideMs:
+        typeof overrideConfig.autoHideMs === "number"
+          ? overrideConfig.autoHideMs
+          : 0,
+      showOncePerSession:
+        typeof overrideConfig.showOncePerSession === "boolean"
+          ? overrideConfig.showOncePerSession
+          : false,
+      scheduleStartAt: overrideConfig.scheduleStartAt || "",
+      scheduleEndAt: overrideConfig.scheduleEndAt || "",
+      backgroundColor: overrideConfig.backgroundColor || "#1f2937",
+      textColor: overrideConfig.textColor || "#ffffff",
+      buttonColor: overrideConfig.buttonColor || "#ffffff",
+      buttonTextColor: overrideConfig.buttonTextColor || "#111827",
+      position: overrideConfig.position || "top",
+      fullWidth:
+        typeof overrideConfig.fullWidth === "boolean" ? overrideConfig.fullWidth : true,
+      shadow:
+        typeof overrideConfig.shadow === "boolean" ? overrideConfig.shadow : true,
+      borderRadius:
+        typeof overrideConfig.borderRadius === "number" ? overrideConfig.borderRadius : 8,
+      zIndex: typeof overrideConfig.zIndex === "number" ? overrideConfig.zIndex : 2147483000,
+      allowedDomains: Array.isArray(overrideConfig.allowedDomains)
+        ? overrideConfig.allowedDomains
+        : Array.isArray(overrides.allowedDomains)
+          ? overrides.allowedDomains
+          : [],
+    }
+  };
+}
+
 export function defaultWorkspaceChatbot(workspaceId = null, overrides = {}) {
   const defaults = defaultChatbotConfig(workspaceId, overrides);
 
@@ -177,6 +227,9 @@ export function defaultWorkspaceChatbot(workspaceId = null, overrides = {}) {
     allowedDomains: defaults.allowedDomains,
   });
   const logs = defaultLogsConfig({
+    allowedDomains: defaults.allowedDomains,
+  });
+  const banners = defaultBannersConfig({
     allowedDomains: defaults.allowedDomains,
   });
 
@@ -192,6 +245,7 @@ export function defaultWorkspaceChatbot(workspaceId = null, overrides = {}) {
     },
     analytics,
     logs,
+    banners,
   };
 }
 
@@ -226,6 +280,15 @@ export function ensureWorkspaceChatbotDefaults(workspace = {}) {
     module: workspace?.logs?.module,
     allowedDomains: workspaceAllowedDomains,
     config: workspace?.logs?.config || {},
+  });
+
+  const bannersDefaults = defaultBannersConfig({
+    name: workspace?.banners?.name,
+    enabled: workspace?.banners?.enabled,
+    scriptUrl: workspace?.banners?.scriptUrl,
+    module: workspace?.banners?.module,
+    allowedDomains: workspaceAllowedDomains,
+    config: workspace?.banners?.config || {},
   });
 
   const existingConfig =
@@ -335,6 +398,29 @@ export function ensureWorkspaceChatbotDefaults(workspace = {}) {
             : workspaceAllowedDomains.length > 0
               ? workspaceAllowedDomains
               : logsDefaults.config.allowedDomains,
+      },
+    },
+    banners: {
+      ...(workspace?.banners || {}),
+      name: workspace?.banners?.name || bannersDefaults.name,
+      enabled:
+        typeof workspace?.banners?.enabled === "boolean"
+          ? workspace.banners.enabled
+          : bannersDefaults.enabled,
+      scriptUrl: workspace?.banners?.scriptUrl || bannersDefaults.scriptUrl,
+      module:
+        typeof workspace?.banners?.module === "boolean"
+          ? workspace.banners.module
+          : bannersDefaults.module,
+      config: {
+        ...bannersDefaults.config,
+        ...(workspace?.banners?.config || {}),
+        allowedDomains:
+          Array.isArray(workspace?.banners?.config?.allowedDomains)
+            ? workspace.banners.config.allowedDomains
+            : workspaceAllowedDomains.length > 0
+              ? workspaceAllowedDomains
+              : bannersDefaults.config.allowedDomains,
       },
     },
   };
