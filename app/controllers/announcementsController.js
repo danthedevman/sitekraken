@@ -83,6 +83,12 @@ function normalizeBannerIds(value) {
   return [...new Set(ids.map((id) => String(id || '').trim()).filter(Boolean))];
 }
 
+function parsePositiveInt(value, fallback) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback;
+  return parsed;
+}
+
 async function hydrateWorkspace(req) {
   const { workspaces } = getCollections();
   const workspace = req.workspace;
@@ -126,13 +132,67 @@ export async function index(req, res) {
   }
 
   const banners = workspace.banners || {};
-  const items = sortedItems(workspace);
+  const allItems = sortedItems(workspace);
+  const pageSize = parsePositiveInt(req.query.pageSize, 20);
+  const page = parsePositiveInt(req.query.page, 1);
+  const search = String(req.query.search || '').trim().toLowerCase();
+  const sort = String(req.query.sort || 'updatedAt').trim();
+  const direction = String(req.query.direction || 'desc').toLowerCase() === 'asc' ? 'asc' : 'desc';
+  const sortDirection = direction === 'asc' ? 1 : -1;
+  const sortConfig = {
+    title: (item) => String(item.title || '').toLowerCase(),
+    message: (item) => String(item.message || '').toLowerCase(),
+    status: (item) => String(item.status || '').toLowerCase(),
+    type: (item) => String(item.type || '').toLowerCase(),
+    schedule: (item) => String(item.scheduleStartAt || ''),
+    updatedAt: (item) => String(item.updatedAt || item.createdAt || '')
+  };
+  const sortKey = Object.prototype.hasOwnProperty.call(sortConfig, sort) ? sort : 'updatedAt';
+
+  let filtered = allItems;
+  if (search) {
+    filtered = allItems.filter((item) => {
+      const haystack = [
+        item.title,
+        item.message,
+        item.status,
+        item.type,
+        item.scheduleStartAt,
+        item.scheduleEndAt
+      ]
+        .map((value) => String(value || '').toLowerCase())
+        .join(' ');
+      return haystack.includes(search);
+    });
+  }
+
+  const sorted = filtered.slice().sort((a, b) => {
+    const valueA = sortConfig[sortKey](a);
+    const valueB = sortConfig[sortKey](b);
+    if (valueA === valueB) return 0;
+    return valueA > valueB ? sortDirection : -sortDirection;
+  });
+
+  const totalRows = sorted.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const skip = (currentPage - 1) * pageSize;
+  const items = sorted.slice(skip, skip + pageSize);
 
   res.render('announcements/index', {
     workspace,
     active: 'announcements',
     banners,
     items,
+    tableState: {
+      search,
+      sort: sortKey,
+      direction,
+      page: currentPage,
+      pageSize,
+      totalRows,
+      totalPages
+    }
   });
 }
 
