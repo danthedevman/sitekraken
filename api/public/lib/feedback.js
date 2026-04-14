@@ -199,7 +199,7 @@
         color: ${config.tabTextColor};
         height:40px;
       }
-      .tab.right { right: 40px; transform: rotate(-90deg) translateY(-100%); }
+      .tab.right { right: 40px; transform: rotate(-90deg) translateY(0); }
       .tab.left { left: 40px; transform: rotate(90deg) translateX(0); }
 
       .overlayWrap {
