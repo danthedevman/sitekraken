@@ -29,6 +29,21 @@ export function normalizeAllowedDomainsInput(value) {
     .filter(Boolean);
 }
 
+export function normalizeAllowedDomainOrigin(value) {
+  const input = String(value || "").trim();
+  if (!input) return null;
+
+  try {
+    if (input.startsWith("http://") || input.startsWith("https://")) {
+      return new URL(input).origin;
+    }
+
+    return new URL(`https://${input}`).origin;
+  } catch {
+    return null;
+  }
+}
+
 export function defaultChatbotConfig(workspaceId = null, overrides = {}) {
   const overrideConfig =
     overrides && typeof overrides.config === "object" ? overrides.config : {};

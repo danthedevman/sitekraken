@@ -2,7 +2,7 @@ import { DeleteObjectCommand, DeleteObjectsCommand, ListObjectsV2Command, S3Clie
 import { getCollections } from '../config/db.js';
 import {
   defaultWorkspaceChatbot,
-  normalizeAllowedDomainsInput
+  normalizeAllowedDomainOrigin
 } from '../models/defaults.js';
 import openaiClient, { createVectorStore, deleteOpenAIFile } from '../services/openaiService.js';
 import {
@@ -121,16 +121,41 @@ export function newForm(req, res) {
   res.render('workspaces/new');
 }
 
+function parseLocalhostToggle(value) {
+  return value === 'on' || value === 'true' || value === '1';
+}
+
+function buildAllowedDomains(websiteUrl, includeLocalhost) {
+  const allowedDomains = [];
+  const websiteOrigin = normalizeAllowedDomainOrigin(websiteUrl);
+
+  if (websiteOrigin) {
+    allowedDomains.push(websiteOrigin);
+  }
+
+  if (includeLocalhost) {
+    allowedDomains.push('http://localhost');
+  }
+
+  return { allowedDomains, websiteOrigin };
+}
+
 export async function create(req, res) {
   const { workspaces } = getCollections();
-  const { name, description } = req.body;
+  const { name, description, websiteUrl } = req.body;
 
   const trimmedName = String(name || '').trim();
   const trimmedDescription = String(description || '').trim();
-  const allowedDomains = normalizeAllowedDomainsInput(req.body.allowedDomains);
+  const includeLocalhost = parseLocalhostToggle(req.body.includeLocalhost);
+  const { allowedDomains, websiteOrigin } = buildAllowedDomains(websiteUrl, includeLocalhost);
 
   if (!trimmedName) {
     req.flash('error', 'Workspace name is required');
+    return res.redirect('/workspaces/new');
+  }
+
+  if (!websiteOrigin) {
+    req.flash('error', 'A valid website URL is required');
     return res.redirect('/workspaces/new');
   }
 
@@ -140,6 +165,8 @@ export async function create(req, res) {
   const workspaceDoc = {
     name: trimmedName,
     description: trimmedDescription,
+    websiteUrl: websiteOrigin,
+    includeLocalhost,
     ownerId: req.user._id,
     members: [],
     openaiVectorStoreId: vectorStore.id,
@@ -186,9 +213,18 @@ export async function settingsForm(req, res) {
     workspace,
     active: 'settings',
     members,
-    allowedDomainsText: Array.isArray(workspace.allowedDomains)
-      ? workspace.allowedDomains.join('\n')
-      : ''
+    websiteUrl:
+      workspace.websiteUrl ||
+      (Array.isArray(workspace.allowedDomains)
+        ? workspace.allowedDomains.find((domain) => !domain.includes('localhost'))
+        : '') ||
+      '',
+    includeLocalhost:
+      typeof workspace.includeLocalhost === 'boolean'
+        ? workspace.includeLocalhost
+        : Array.isArray(workspace.allowedDomains)
+          ? workspace.allowedDomains.some((domain) => domain.includes('localhost'))
+          : false
   });
 }
 
@@ -203,10 +239,16 @@ export async function updateSettings(req, res) {
 
   const trimmedName = String(req.body.name || '').trim();
   const trimmedDescription = String(req.body.description || '').trim();
-  const allowedDomains = normalizeAllowedDomainsInput(req.body.allowedDomains);
+  const includeLocalhost = parseLocalhostToggle(req.body.includeLocalhost);
+  const { allowedDomains, websiteOrigin } = buildAllowedDomains(req.body.websiteUrl, includeLocalhost);
 
   if (!trimmedName) {
     req.flash('error', 'Workspace name is required');
+    return res.redirect(`/workspaces/${workspace._id}/settings`);
+  }
+
+  if (!websiteOrigin) {
+    req.flash('error', 'A valid website URL is required');
     return res.redirect(`/workspaces/${workspace._id}/settings`);
   }
 
@@ -216,6 +258,8 @@ export async function updateSettings(req, res) {
       $set: {
         name: trimmedName,
         description: trimmedDescription,
+        websiteUrl: websiteOrigin,
+        includeLocalhost,
         allowedDomains,
         updatedAt: new Date()
       }
