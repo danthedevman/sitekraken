@@ -29,6 +29,35 @@ function getOriginFromUrl(url, fallbackOrigin) {
   }
 }
 
+function isLocalhostHost(hostname) {
+  if (!hostname) return false;
+
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "[::1]"
+  );
+}
+
+function getDevBaseUrl(request) {
+  const candidate = request.query?.devBaseUrl;
+
+  if (!candidate) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(String(candidate));
+    if (!isLocalhostHost(parsed.hostname)) {
+      return null;
+    }
+
+    return parsed.origin;
+  } catch {
+    return null;
+  }
+}
+
 function buildModulesFromWorkspace(workspace, request) {
   const chatModule = workspace.chatbot || {};
   const analyticsModule = workspace.analytics || {};
@@ -39,7 +68,7 @@ function buildModulesFromWorkspace(workspace, request) {
     ? workspace.allowedDomains
     : [];
 
-  const baseUrl = getRequestBaseUrl(request);
+  const baseUrl = getDevBaseUrl(request) || getRequestBaseUrl(request);
   const analyticsScriptUrl = analyticsModule.scriptUrl || `${baseUrl}/public/lib/analytics.js`;
   const logsScriptUrl = logsModule.scriptUrl || `${baseUrl}/public/lib/logs.js`;
   const bannersScriptUrl = bannersModule.scriptUrl || `${baseUrl}/public/lib/banners.js`;

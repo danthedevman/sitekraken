@@ -27,6 +27,21 @@
         }
       })());
 
+  var devBaseUrl =
+    currentScript &&
+    (currentScript.getAttribute("data-dev-base-url") ||
+      currentScript.getAttribute("dev-base-url"));
+
+  var resolvedBaseUrl = loaderBase;
+
+  if (devBaseUrl) {
+    try {
+      resolvedBaseUrl = new URL(devBaseUrl, w.location.href).origin;
+    } catch (e) {
+      console.warn("[SiteKraken] Invalid data-dev-base-url, falling back.");
+    }
+  }
+
   if (!apiKey) {
     console.error("[SiteKraken] Missing data-api-key on embed script.");
     return;
@@ -39,7 +54,7 @@
       ...(w.EmbeddedChatbotConfig || {}),
       ...config,
       apiKey: apiKey,
-      apiUrl: loaderBase,
+      apiUrl: resolvedBaseUrl,
     };
   }
 
@@ -107,10 +122,13 @@
   }
 
   function fetchEmbedConfig() {
-    var url = new URL("/embed/config", loaderBase);
+    var url = new URL("/embed/config", resolvedBaseUrl);
     url.searchParams.set("apiKey", apiKey);
     url.searchParams.set("host", w.location.hostname);
     url.searchParams.set("pageUrl", w.location.href);
+    if (devBaseUrl) {
+      url.searchParams.set("devBaseUrl", resolvedBaseUrl);
+    }
 
     return fetch(url.toString(), {
       method: "GET",
