@@ -1,8 +1,8 @@
 <% if (Array.isArray(tabLinks) && tabLinks.length) { %>
-<ul class="nav nav-tabs mb-4">
+<ul class="nav nav-tabs mb-3">
   <% tabLinks.forEach((tab) => { %>
   <li class="nav-item" role="presentation">
-    <a href="<%= tab.href %>" class="nav-link <%= activeTab === tab.key ? 'active' : '' %>">
+    <a href="<%= tab.href %>" class="nav-link <%= activeTab === tab.key ? 'active' : 'text-muted' %>">
       <%= tab.label %>
     </a>
   </li>
