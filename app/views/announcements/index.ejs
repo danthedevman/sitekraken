@@ -32,11 +32,11 @@
     { key: 'message', label: 'Message' },
     { key: 'status', label: 'Status' },
     { key: 'type', label: 'Type' },
-    { key: 'schedule', label: 'Schedule' },
-    { key: 'actions', label: '', sortable: false }
+    { key: 'schedule', label: 'Schedule' }
   ];
 
   const rows = items.map((item) => ({
+    href: `/workspaces/${workspace._id}/announcements/${item.id}/edit`,
     values: {
       id: item.id,
       title: item.title || '',
@@ -51,23 +51,7 @@
       message: `<div class="small text-muted text-truncate" style="max-width: 420px;" title="${(item.message || '').replaceAll('"', '&quot;')}">${item.message || 'No message'}</div>`,
       status: `<span class="badge text-bg-${item.status === 'published' ? 'success' : item.status === 'scheduled' ? 'warning' : 'secondary'}">${item.status}</span>`,
       type: item.type,
-      schedule: `<div class="small"><div>${item.scheduleStartAt ? new Date(item.scheduleStartAt).toISOString().replace('T', ' ').slice(0, 16) + ' UTC' : '—'}</div><div>${item.scheduleEndAt ? new Date(item.scheduleEndAt).toISOString().replace('T', ' ').slice(0, 16) + ' UTC' : '—'}</div></div>`,
-      actions: `
-        <div class="d-inline-flex gap-1">
-          <a class="btn btn-sm btn-outline-primary" href="/workspaces/${workspace._id}/announcements/${item.id}/edit">Edit</a>
-          <form method="POST" action="/workspaces/${workspace._id}/announcements" class="d-inline">
-            <input type="hidden" name="intent" value="set-status" />
-            <input type="hidden" name="bannerId" value="${item.id}" />
-            <input type="hidden" name="nextStatus" value="${item.status === 'published' ? 'draft' : 'published'}" />
-            <button class="btn btn-sm btn-outline-secondary">${item.status === 'published' ? 'Unpublish' : 'Publish'}</button>
-          </form>
-          <form method="POST" action="/workspaces/${workspace._id}/announcements" class="d-inline" onsubmit="return confirm('Delete this banner?')">
-            <input type="hidden" name="intent" value="delete" />
-            <input type="hidden" name="bannerId" value="${item.id}" />
-            <button class="btn btn-sm btn-outline-danger">Delete</button>
-          </form>
-        </div>
-      `
+      schedule: `<div class="small"><div>${item.scheduleStartAt ? new Date(item.scheduleStartAt).toISOString().replace('T', ' ').slice(0, 16) + ' UTC' : '—'}</div><div>${item.scheduleEndAt ? new Date(item.scheduleEndAt).toISOString().replace('T', ' ').slice(0, 16) + ' UTC' : '—'}</div></div>`
     }
   }));
 %>
