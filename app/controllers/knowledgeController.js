@@ -243,6 +243,10 @@ export async function index(req, res) {
     active: 'chatbot',
     tabLinks: buildChatbotTabLinks(workspace._id),
     entries: serializeDocs(docs),
+    newEntryButton: {
+      label: 'New entry',
+      href: `/workspaces/${workspace._id}/chatbot/knowledge/new`
+    },
     tableState: {
       search,
       sort: sortKey,
