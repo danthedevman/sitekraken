@@ -51,28 +51,6 @@ function stringValue(value, fallback = '') {
   return v || fallback;
 }
 
-function buildEmbedScriptTag(workspace) {
-  const appUrl = String(process.env.APP_URL || '').replace(/\/+$/, '');
-  const src = appUrl
-    ? `${appUrl}/public/lib/embed.js`
-    : '/public/lib/embed.js';
-
-  return `<script src="${src}" data-api-key="${workspace.apiKey}"></script>`;
-}
-
-function toMultilineFooterLinks(footerLinks) {
-  if (!Array.isArray(footerLinks)) return '';
-
-  return footerLinks
-    .map((item) => {
-      const label = item?.label || '';
-      const href = item?.href || '';
-      const target = item?.target || '_blank';
-      return `${label}|${href}|${target}`;
-    })
-    .join('\n');
-}
-
 function sanitizeHexColor(value, fallback) {
   const str = String(value || '').trim();
   if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(str)) return str;
@@ -185,15 +163,7 @@ export async function index(req, res) {
     active:"chatbot",
     tabLinks: buildChatbotTabLinks(serializedWorkspace._id),
     chatbot,
-    config,
-    embedScriptTag: buildEmbedScriptTag(serializedWorkspace),
-    quickMessagesText: Array.isArray(config.quickMessages)
-      ? config.quickMessages.join('\n')
-      : '',
-    footerLinksText: toMultilineFooterLinks(config.footerLinks),
-    allowedDomainsText: Array.isArray(serializedWorkspace?.allowedDomains)
-      ? serializedWorkspace.allowedDomains.join('\n')
-      : ''
+    config
   });
 }
 
