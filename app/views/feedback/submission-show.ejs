@@ -7,6 +7,14 @@
 
 <div class="card">
   <div class="card-body">
+    <% const configuredFields = Array.isArray(workspace?.feedback?.config?.fields) ? workspace.feedback.config.fields : []; %>
+    <% const fieldLabelsById = configuredFields.reduce((acc, field) => {
+         const id = String(field?.id || '').trim();
+         const label = String(field?.label || '').trim();
+         if (id) acc[id] = label || id;
+         return acc;
+       }, {}); %>
+
     <dl class="row mb-0">
       <dt class="col-sm-3">Submitted at</dt>
       <dd class="col-sm-9"><%= submission.createdAt %></dd>
@@ -15,7 +23,7 @@
       <dd class="col-sm-9 text-break"><%= submission.pageUrl || '—' %></dd>
 
       <% Object.entries(submission.payload || {}).forEach(([key, value]) => { %>
-        <dt class="col-sm-3"><%= key %></dt>
+        <dt class="col-sm-3"><%= fieldLabelsById[key] || key %></dt>
         <dd class="col-sm-9"><%= Array.isArray(value) ? value.join(', ') : value %></dd>
       <% }) %>
     </dl>
