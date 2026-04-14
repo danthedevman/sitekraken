@@ -124,8 +124,8 @@ function normalizeFieldRows(body = {}) {
 
 function buildFeedbackTabLinks(workspaceId) {
   return [
-    { key: 'configuration', label: 'Configuration', href: `/workspaces/${workspaceId}/feedback` },
     { key: 'submissions', label: 'Submissions', href: `/workspaces/${workspaceId}/feedback/submissions` },
+    { key: 'configuration', label: 'Configuration', href: `/workspaces/${workspaceId}/feedback/configuration` },
   ];
 }
 
@@ -149,6 +149,10 @@ function escapeRegExp(value) {
 }
 
 export async function index(req, res) {
+  return res.redirect(`/workspaces/${req.params.workspaceId}/feedback/submissions`);
+}
+
+export async function configuration(req, res) {
   const workspace = await hydrateWorkspace(req);
   if (!workspace) {
     req.flash('error', 'Workspace not found');
@@ -176,7 +180,7 @@ export async function update(req, res) {
   const fields = normalizeFieldRows(req.body);
   if (!fields.length) {
     req.flash('error', 'Add at least one feedback field.');
-    return res.redirect(`/workspaces/${workspace._id}/feedback`);
+    return res.redirect(`/workspaces/${workspace._id}/feedback/configuration`);
   }
 
   await workspaces.updateOne(
@@ -216,7 +220,7 @@ export async function update(req, res) {
   );
 
   req.flash('success', 'Feedback form settings saved.');
-  return res.redirect(`/workspaces/${workspace._id}/feedback`);
+  return res.redirect(`/workspaces/${workspace._id}/feedback/configuration`);
 }
 
 export async function submissions(req, res) {
@@ -373,5 +377,5 @@ export async function toggleEnabled(req, res) {
   );
 
   req.flash('success', shouldEnable ? 'Feedback activated.' : 'Feedback deactivated.');
-  return res.redirect(`/workspaces/${workspace._id}/feedback`);
+  return res.redirect(`/workspaces/${workspace._id}/feedback/configuration`);
 }
