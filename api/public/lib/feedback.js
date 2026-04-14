@@ -167,11 +167,12 @@
     host.style.background = 'transparent';
 
     host.style[config.displaySide] = '0px';
+    host.style.height = '100vh';
     if (config.verticalPosition === 'top') {
       host.style.top = config.offsetPx + 'px';
     } else if (config.verticalPosition === 'middle') {
       host.style.top = '50%';
-      host.style.transform = 'translateY(-50%)';
+      //host.style.transform = 'translateY(-50%)';
     } else {
       host.style.bottom = config.offsetPx + 'px';
     }
@@ -185,20 +186,21 @@
       :host, * { box-sizing: border-box; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
       .wrap { position: relative; pointer-events: auto; }
       .tab {
-        position: absolute;
-        top: 0;
+        position: fixed;
+        top: 50%;
         border: 0;
         padding: 10px 16px;
         border-radius: 10px 10px 0 0;
         cursor: pointer;
         white-space: nowrap;
-        transform-origin: ${config.displaySide === 'right' ? 'top right' : 'top left'};
+        /*transform-origin: ${config.displaySide === 'right' ? 'top right' : 'top left'};*/
         box-shadow: 0 6px 20px rgba(0,0,0,0.2);
         background: ${config.tabBackgroundColor};
         color: ${config.tabTextColor};
+        height:40px;
       }
-      .tab.right { right: 0; transform: rotate(90deg) translateY(-100%); }
-      .tab.left { left: 0; transform: rotate(-90deg) translateX(-100%); }
+      .tab.right { right: 40px; transform: rotate(-90deg) translateY(-100%); }
+      .tab.left { left: 40px; transform: rotate(90deg) translateX(0); }
 
       .overlayWrap {
         position: fixed;
