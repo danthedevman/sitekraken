@@ -1,242 +1,398 @@
-(function (w, d) {
-  var script =
-    d.currentScript ||
-    (function () {
-      var scripts = d.getElementsByTagName('script');
-      return scripts[scripts.length - 1];
-    })();
+(() => {
+  if (window.__embeddedFeedbackLoaded) return;
+  window.__embeddedFeedbackLoaded = true;
 
-  var rawModuleConfig = script && script.getAttribute('data-module-config');
-  var cfg = {};
+  function getCurrentScript() {
+    if (document.currentScript) return document.currentScript;
 
-  try {
-    cfg = rawModuleConfig ? JSON.parse(rawModuleConfig) : {};
-  } catch (error) {
-    console.warn('[SiteKraken feedback] Invalid module config', error);
-    cfg = {};
+    const scripts = Array.from(document.getElementsByTagName('script'));
+    return (
+      scripts.find((s) => s.src && s.src.includes('/public/lib/feedback.js')) ||
+      scripts[scripts.length - 1]
+    );
   }
 
-  if (cfg.enabled === false) return;
+  const currentScript = getCurrentScript();
 
-  var fields = Array.isArray(cfg.fields) ? cfg.fields : [];
-  if (!fields.length) return;
+  let moduleConfig = {};
+  try {
+    moduleConfig = currentScript?.getAttribute('data-module-config')
+      ? JSON.parse(currentScript.getAttribute('data-module-config'))
+      : {};
+  } catch {
+    moduleConfig = {};
+  }
 
-  var apiBase = cfg.apiUrl || (script && script.src ? new URL(script.src, w.location.href).origin : w.location.origin);
-  var apiKey = (script && script.getAttribute('data-api-key')) || '';
+  if (moduleConfig.enabled === false) return;
 
-  function getSide(value) {
-    var side = String(value || '').toLowerCase();
+  const inferredScriptOrigin = currentScript?.src
+    ? (() => {
+        try {
+          return new URL(currentScript.src, window.location.href).origin;
+        } catch {
+          return '';
+        }
+      })()
+    : '';
+
+  const DEFAULTS = {
+    enabled: true,
+    apiUrl: '',
+    apiKey: currentScript?.getAttribute('data-api-key') || '',
+    fields: [],
+    tabLabel: 'Feedback',
+    formTitle: 'Share your feedback',
+    submitLabel: 'Send feedback',
+    confirmationTitle: 'Thanks for your feedback',
+    confirmationMessage: 'Your response has been submitted.',
+    tabBackgroundColor: '#111827',
+    tabTextColor: '#ffffff',
+    panelBackgroundColor: '#ffffff',
+    panelTextColor: '#111827',
+    buttonBackgroundColor: '#111827',
+    buttonTextColor: '#ffffff',
+    displaySide: 'right',
+    verticalPosition: 'bottom',
+    offsetPx: 0,
+  };
+
+  const config = {
+    ...DEFAULTS,
+    ...(moduleConfig || {}),
+    apiUrl:
+      moduleConfig.apiUrl || inferredScriptOrigin || window.location.origin,
+    apiKey:
+      currentScript?.getAttribute('data-api-key') ||
+      moduleConfig.apiKey ||
+      DEFAULTS.apiKey,
+  };
+
+  function sanitizeColor(value, fallback) {
+    const str = String(value || '').trim();
+    if (!str) return fallback;
+
+    if (
+      /^#([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(str) ||
+      /^rgba?\([\d\s.,%]+\)$/i.test(str) ||
+      /^hsla?\([\d\s.,%]+\)$/i.test(str) ||
+      /^[a-z]+$/i.test(str)
+    ) {
+      return str;
+    }
+
+    return fallback;
+  }
+
+  function normalizeSide(value) {
+    const side = String(value || '').toLowerCase();
     return side === 'left' ? 'left' : 'right';
   }
 
-  function getVerticalPosition(value) {
-    var pos = String(value || '').toLowerCase();
+  function normalizeVerticalPosition(value) {
+    const pos = String(value || '').toLowerCase();
     return pos === 'top' || pos === 'middle' ? pos : 'bottom';
   }
 
-  function getOffsetPx(value, fallback) {
-    var parsed = Number(value);
+  function normalizeOffsetPx(value, fallback) {
+    const parsed = Number(value);
     if (!Number.isFinite(parsed)) return fallback;
     return Math.max(0, Math.min(200, Math.round(parsed)));
   }
 
-  function mountWidget() {
-    if (!d.body) return;
+  function normalizeFields(value) {
+    if (!Array.isArray(value)) return [];
 
-    var root = d.createElement('div');
-    root.style.position = 'fixed';
-    root.style.zIndex = '2147482999';
-    root.style.width = '0';
-    root.style.height = '0';
+    return value
+      .map((field) => {
+        if (!field || typeof field !== 'object' || !field.id || !field.label) {
+          return null;
+        }
 
-    var side = getSide(cfg.displaySide);
-    var verticalPosition = getVerticalPosition(cfg.verticalPosition);
-    var offsetPx = getOffsetPx(cfg.offsetPx, 0);
-
-    root.style[side] = '0px';
-    if (verticalPosition === 'top') {
-      root.style.top = offsetPx + 'px';
-    } else if (verticalPosition === 'middle') {
-      root.style.top = '50%';
-      root.style.transform = 'translateY(-50%)';
-    } else {
-      root.style.bottom = offsetPx + 'px';
-    }
-
-    var isRightSide = side === 'right';
-
-    var tab = d.createElement('button');
-    tab.type = 'button';
-    tab.textContent = cfg.tabLabel || 'Feedback';
-    tab.setAttribute('aria-expanded', 'false');
-    tab.style.border = '0';
-    tab.style.padding = '10px 16px';
-    tab.style.borderRadius = '10px 10px 0 0';
-    tab.style.cursor = 'pointer';
-    tab.style.background = cfg.tabBackgroundColor || '#111827';
-    tab.style.color = cfg.tabTextColor || '#ffffff';
-    tab.style.position = 'absolute';
-    tab.style.top = '0';
-    tab.style.whiteSpace = 'nowrap';
-    tab.style.transformOrigin = isRightSide ? 'top right' : 'top left';
-    tab.style.boxShadow = '0 6px 20px rgba(0,0,0,0.2)';
-    tab.style.fontFamily = 'Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
-
-    if (isRightSide) {
-      tab.style.right = '0';
-      tab.style.transform = 'rotate(90deg) translateY(-100%)';
-    } else {
-      tab.style.left = '0';
-      tab.style.transform = 'rotate(-90deg) translateX(-100%)';
-    }
-
-    var overlay = d.createElement('button');
-    overlay.type = 'button';
-    overlay.setAttribute('aria-label', 'Close feedback form');
-    overlay.style.display = 'none';
-    overlay.style.position = 'fixed';
-    overlay.style.top = '0';
-    overlay.style.left = '0';
-    overlay.style.width = '100vw';
-    overlay.style.height = '100vh';
-    overlay.style.border = '0';
-    overlay.style.padding = '0';
-    overlay.style.margin = '0';
-    overlay.style.background = 'rgba(17, 24, 39, 0.45)';
-    overlay.style.cursor = 'pointer';
-
-    var panel = d.createElement('div');
-    panel.style.display = 'none';
-    panel.style.width = 'min(360px, calc(100vw - 24px))';
-    panel.style.maxHeight = 'min(70vh, 620px)';
-    panel.style.overflowY = 'auto';
-    panel.style.background = cfg.panelBackgroundColor || '#ffffff';
-    panel.style.color = cfg.panelTextColor || '#111827';
-    panel.style.padding = '12px';
-    panel.style.borderRadius = '10px';
-    panel.style.boxShadow = '0 8px 30px rgba(0,0,0,0.2)';
-    panel.style.position = 'fixed';
-    panel.style.top = '50%';
-    panel.style.left = '50%';
-    panel.style.transform = 'translate(-50%, -50%)';
-    panel.style.zIndex = '2147483001';
-    panel.style.fontFamily = 'Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
-
-    var header = d.createElement('div');
-    header.style.display = 'flex';
-    header.style.alignItems = 'center';
-    header.style.justifyContent = 'space-between';
-    header.style.gap = '8px';
-    header.style.marginBottom = '10px';
-
-    var title = d.createElement('h3');
-    title.textContent = cfg.formTitle || 'Share your feedback';
-    title.style.margin = '0';
-    title.style.fontSize = '16px';
-
-    var closeBtn = d.createElement('button');
-    closeBtn.type = 'button';
-    closeBtn.textContent = '✕';
-    closeBtn.setAttribute('aria-label', 'Close feedback form');
-    closeBtn.style.border = '0';
-    closeBtn.style.background = 'transparent';
-    closeBtn.style.color = panel.style.color;
-    closeBtn.style.fontSize = '18px';
-    closeBtn.style.lineHeight = '1';
-    closeBtn.style.cursor = 'pointer';
-    closeBtn.style.padding = '2px 4px';
-
-    var message = d.createElement('div');
-    message.style.display = 'none';
-    message.style.marginBottom = '10px';
-
-    var form = d.createElement('form');
-    form.style.display = 'grid';
-    form.style.gap = '10px';
-
-  function createField(field) {
-    var wrap = d.createElement('label');
-    wrap.style.display = 'grid';
-    wrap.style.gap = '4px';
-
-    var label = d.createElement('span');
-    label.textContent = field.label + (field.required ? ' *' : '');
-    label.style.fontSize = '13px';
-
-    var input;
-    if (field.type === 'multiline') {
-      input = d.createElement('textarea');
-      input.rows = 3;
-    } else if (field.type === 'select') {
-      input = d.createElement('select');
-      var empty = d.createElement('option');
-      empty.value = '';
-      empty.textContent = 'Select';
-      input.appendChild(empty);
-      (Array.isArray(field.options) ? field.options : []).forEach(function (optionValue) {
-        var option = d.createElement('option');
-        option.value = String(optionValue);
-        option.textContent = String(optionValue);
-        input.appendChild(option);
-      });
-    } else {
-      input = d.createElement('input');
-      input.type = field.type === 'email' ? 'email' : 'text';
-    }
-
-    input.name = field.id;
-    input.required = field.required === true;
-    if (field.placeholder) input.placeholder = field.placeholder;
-    input.style.width = '100%';
-    input.style.padding = '8px';
-    input.style.border = '1px solid #d1d5db';
-    input.style.borderRadius = '8px';
-
-    wrap.appendChild(label);
-    wrap.appendChild(input);
-
-    if (field.helpText) {
-      var help = d.createElement('small');
-      help.textContent = field.helpText;
-      help.style.opacity = '0.7';
-      wrap.appendChild(help);
-    }
-
-    return wrap;
+        const type = String(field.type || 'text').toLowerCase();
+        return {
+          id: String(field.id),
+          label: String(field.label),
+          required: field.required === true,
+          helpText: field.helpText ? String(field.helpText) : '',
+          placeholder: field.placeholder ? String(field.placeholder) : '',
+          type:
+            type === 'multiline' || type === 'select' || type === 'email'
+              ? type
+              : 'text',
+          options: Array.isArray(field.options)
+            ? field.options.map((opt) => String(opt))
+            : [],
+        };
+      })
+      .filter(Boolean);
   }
 
-    fields.forEach(function (field) {
+  config.fields = normalizeFields(config.fields);
+  if (!config.fields.length) return;
+
+  config.tabBackgroundColor = sanitizeColor(
+    config.tabBackgroundColor,
+    DEFAULTS.tabBackgroundColor,
+  );
+  config.tabTextColor = sanitizeColor(config.tabTextColor, DEFAULTS.tabTextColor);
+  config.panelBackgroundColor = sanitizeColor(
+    config.panelBackgroundColor,
+    DEFAULTS.panelBackgroundColor,
+  );
+  config.panelTextColor = sanitizeColor(
+    config.panelTextColor,
+    DEFAULTS.panelTextColor,
+  );
+  config.buttonBackgroundColor = sanitizeColor(
+    config.buttonBackgroundColor,
+    DEFAULTS.buttonBackgroundColor,
+  );
+  config.buttonTextColor = sanitizeColor(
+    config.buttonTextColor,
+    DEFAULTS.buttonTextColor,
+  );
+
+  config.displaySide = normalizeSide(config.displaySide);
+  config.verticalPosition = normalizeVerticalPosition(config.verticalPosition);
+  config.offsetPx = normalizeOffsetPx(config.offsetPx, DEFAULTS.offsetPx);
+
+  function mount() {
+    if (!document.body || document.getElementById('embedded-feedback-host')) return;
+
+    const host = document.createElement('div');
+    host.id = 'embedded-feedback-host';
+    host.style.position = 'fixed';
+    host.style.zIndex = '2147482999';
+    host.style.pointerEvents = 'none';
+    host.style.background = 'transparent';
+
+    host.style[config.displaySide] = '0px';
+    if (config.verticalPosition === 'top') {
+      host.style.top = config.offsetPx + 'px';
+    } else if (config.verticalPosition === 'middle') {
+      host.style.top = '50%';
+      host.style.transform = 'translateY(-50%)';
+    } else {
+      host.style.bottom = config.offsetPx + 'px';
+    }
+
+    document.body.appendChild(host);
+
+    const shadow = host.attachShadow({ mode: 'open' });
+
+    const style = document.createElement('style');
+    style.textContent = `
+      :host, * { box-sizing: border-box; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+      .wrap { position: relative; pointer-events: auto; }
+      .tab {
+        position: absolute;
+        top: 0;
+        border: 0;
+        padding: 10px 16px;
+        border-radius: 10px 10px 0 0;
+        cursor: pointer;
+        white-space: nowrap;
+        transform-origin: ${config.displaySide === 'right' ? 'top right' : 'top left'};
+        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        background: ${config.tabBackgroundColor};
+        color: ${config.tabTextColor};
+      }
+      .tab.right { right: 0; transform: rotate(90deg) translateY(-100%); }
+      .tab.left { left: 0; transform: rotate(-90deg) translateX(-100%); }
+
+      .overlayWrap {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        display: none;
+      }
+      .overlayWrap.open { display: block; }
+
+      .overlay {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        margin: 0;
+        padding: 0;
+        cursor: pointer;
+        background: rgba(17, 24, 39, 0.45);
+      }
+
+      .panel {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: min(360px, calc(100vw - 24px));
+        max-height: min(70vh, 620px);
+        overflow-y: auto;
+        background: ${config.panelBackgroundColor};
+        color: ${config.panelTextColor};
+        padding: 12px;
+        border-radius: 10px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+      }
+
+      .header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+      .title { margin: 0; font-size: 16px; }
+      .closeBtn {
+        border: 0;
+        background: transparent;
+        color: ${config.panelTextColor};
+        font-size: 18px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 2px 4px;
+      }
+
+      .message { display: none; margin-bottom: 10px; }
+      .message.visible { display: block; }
+      .message.success { color: #065f46; }
+      .message.error { color: #b91c1c; }
+
+      .form { display: grid; gap: 10px; }
+      .field { display: grid; gap: 4px; }
+      .label { font-size: 13px; }
+      .input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+      }
+      .help { opacity: .7; }
+
+      .submit {
+        border: 0;
+        padding: 10px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        background: ${config.buttonBackgroundColor};
+        color: ${config.buttonTextColor};
+      }
+    `;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'wrap';
+    wrap.innerHTML = `
+      <button class="tab ${config.displaySide}" type="button" aria-expanded="false">${config.tabLabel}</button>
+      <div class="overlayWrap" aria-hidden="true">
+        <button class="overlay" type="button" aria-label="Close feedback form"></button>
+        <div class="panel" role="dialog" aria-modal="true" aria-label="Feedback form">
+          <div class="header">
+            <h3 class="title">${config.formTitle}</h3>
+            <button class="closeBtn" type="button" aria-label="Close feedback form">✕</button>
+          </div>
+          <div class="message"></div>
+          <form class="form"></form>
+        </div>
+      </div>
+    `;
+
+    shadow.appendChild(style);
+    shadow.appendChild(wrap);
+
+    const tab = shadow.querySelector('.tab');
+    const overlayWrap = shadow.querySelector('.overlayWrap');
+    const overlay = shadow.querySelector('.overlay');
+    const closeBtn = shadow.querySelector('.closeBtn');
+    const form = shadow.querySelector('.form');
+    const message = shadow.querySelector('.message');
+
+    function setMessage(text, success) {
+      message.classList.add('visible');
+      message.classList.toggle('success', Boolean(success));
+      message.classList.toggle('error', !success);
+      message.textContent = text;
+    }
+
+    function createField(field) {
+      const wrapEl = document.createElement('label');
+      wrapEl.className = 'field';
+
+      const label = document.createElement('span');
+      label.className = 'label';
+      label.textContent = field.label + (field.required ? ' *' : '');
+
+      let input;
+      if (field.type === 'multiline') {
+        input = document.createElement('textarea');
+        input.rows = 3;
+      } else if (field.type === 'select') {
+        input = document.createElement('select');
+        const empty = document.createElement('option');
+        empty.value = '';
+        empty.textContent = 'Select';
+        input.appendChild(empty);
+
+        field.options.forEach((opt) => {
+          const option = document.createElement('option');
+          option.value = opt;
+          option.textContent = opt;
+          input.appendChild(option);
+        });
+      } else {
+        input = document.createElement('input');
+        input.type = field.type === 'email' ? 'email' : 'text';
+      }
+
+      input.className = 'input';
+      input.name = field.id;
+      input.required = field.required;
+      if (field.placeholder) input.placeholder = field.placeholder;
+
+      wrapEl.appendChild(label);
+      wrapEl.appendChild(input);
+
+      if (field.helpText) {
+        const help = document.createElement('small');
+        help.className = 'help';
+        help.textContent = field.helpText;
+        wrapEl.appendChild(help);
+      }
+
+      return wrapEl;
+    }
+
+    config.fields.forEach((field) => {
       form.appendChild(createField(field));
     });
 
-    var submit = d.createElement('button');
+    const submit = document.createElement('button');
+    submit.className = 'submit';
     submit.type = 'submit';
-    submit.textContent = cfg.submitLabel || 'Send feedback';
-    submit.style.border = '0';
-    submit.style.padding = '10px 12px';
-    submit.style.borderRadius = '8px';
-    submit.style.cursor = 'pointer';
-    submit.style.background = cfg.buttonBackgroundColor || '#111827';
-    submit.style.color = cfg.buttonTextColor || '#ffffff';
-
+    submit.textContent = config.submitLabel;
     form.appendChild(submit);
 
-    function setMessage(text, success) {
-      message.style.display = 'block';
-      message.textContent = text;
-      message.style.color = success ? '#065f46' : '#b91c1c';
+    function setOpen(isOpen) {
+      overlayWrap.classList.toggle('open', isOpen);
+      overlayWrap.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+      tab.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     }
 
-    form.addEventListener('submit', function (event) {
+    tab.addEventListener('click', () => {
+      setOpen(!overlayWrap.classList.contains('open'));
+    });
+
+    overlay.addEventListener('click', () => setOpen(false));
+    closeBtn.addEventListener('click', () => setOpen(false));
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') setOpen(false);
+    });
+
+    form.addEventListener('submit', (event) => {
       event.preventDefault();
-      message.style.display = 'none';
+      message.className = 'message';
 
-      var answers = {};
-      var invalid = false;
+      const answers = {};
+      let invalid = false;
 
-      fields.forEach(function (field) {
-        var el = form.elements[field.id];
-        var value = el && typeof el.value === 'string' ? el.value.trim() : '';
+      config.fields.forEach((field) => {
+        const el = form.elements[field.id];
+        const value = el && typeof el.value === 'string' ? el.value.trim() : '';
         if (field.required && !value) invalid = true;
         answers[field.id] = value;
       });
@@ -246,74 +402,44 @@
         return;
       }
 
-      fetch(new URL('/api/feedback/submissions', apiBase).toString(), {
+      fetch(new URL('/api/feedback/submissions', config.apiUrl).toString(), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': apiKey,
+          'x-api-key': config.apiKey,
         },
         body: JSON.stringify({
-          apiKey: apiKey,
-          pageUrl: w.location.href,
-          answers: answers,
+          apiKey: config.apiKey,
+          pageUrl: window.location.href,
+          answers,
         }),
       })
-        .then(function (res) {
-          return res.json().then(function (body) {
+        .then((res) =>
+          res.json().then((body) => {
             if (!res.ok) {
-              throw new Error(body && body.error ? body.error : 'Unable to submit feedback.');
+              throw new Error(
+                body && body.error ? body.error : 'Unable to submit feedback.',
+              );
             }
             return body;
-          });
-        })
-        .then(function (body) {
+          }),
+        )
+        .then((body) => {
           form.reset();
-          var titleText = body.confirmationTitle || cfg.confirmationTitle || 'Thanks for your feedback';
-          var messageText = body.confirmationMessage || cfg.confirmationMessage || 'Your response has been submitted.';
+          const titleText = body.confirmationTitle || config.confirmationTitle;
+          const messageText =
+            body.confirmationMessage || config.confirmationMessage;
           setMessage(titleText + ': ' + messageText, true);
         })
-        .catch(function (error) {
+        .catch((error) => {
           setMessage(error.message || 'Unable to submit feedback.', false);
         });
     });
-
-    header.appendChild(title);
-    header.appendChild(closeBtn);
-    panel.appendChild(header);
-    panel.appendChild(message);
-    panel.appendChild(form);
-
-    function setOpen(nextOpen) {
-      panel.style.display = nextOpen ? 'block' : 'none';
-      overlay.style.display = nextOpen ? 'block' : 'none';
-      tab.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
-    }
-
-    tab.addEventListener('click', function () {
-      setOpen(panel.style.display === 'none');
-    });
-
-    overlay.addEventListener('click', function () {
-      setOpen(false);
-    });
-
-    closeBtn.addEventListener('click', function () {
-      setOpen(false);
-    });
-
-    d.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape') setOpen(false);
-    });
-
-    root.appendChild(tab);
-    root.appendChild(overlay);
-    root.appendChild(panel);
-    d.body.appendChild(root);
   }
 
-  if (d.readyState === 'loading') {
-    d.addEventListener('DOMContentLoaded', mountWidget, { once: true });
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', mount, { once: true });
   } else {
-    mountWidget();
+    mount();
   }
-})(window, document);
+})();
