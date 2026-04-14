@@ -15,148 +15,263 @@
   </div>
 </div>
 
-<div class="card">
-  <div class="card-body">
-    <form method="POST" action="/workspaces/<%= workspace._id %>/feedback" class="row g-3" id="feedback-config-form">
-      <input type="hidden" name="enabled" value="<%= feedback?.enabled ? 'true' : 'false' %>" />
+<div class="row g-3">
+  <div class="col-xl-7">
+    <div class="card">
+      <div class="card-body">
+        <form method="POST" action="/workspaces/<%= workspace._id %>/feedback" class="row g-3" id="feedback-config-form">
+          <input type="hidden" name="enabled" value="<%= feedback?.enabled ? 'true' : 'false' %>" />
 
-      <div class="col-md-4">
-        <label class="form-label">Tab label</label>
-        <input class="form-control" name="tabLabel" value="<%= feedback?.config?.tabLabel || 'Feedback' %>" required />
-      </div>
-      <div class="col-md-4">
-        <label class="form-label">Form title</label>
-        <input class="form-control" name="formTitle" value="<%= feedback?.config?.formTitle || 'Share your feedback' %>" required />
-      </div>
-      <div class="col-md-4">
-        <label class="form-label">Submit button label</label>
-        <input class="form-control" name="submitLabel" value="<%= feedback?.config?.submitLabel || 'Send feedback' %>" required />
-      </div>
+          <div class="col-md-4">
+            <label class="form-label">Tab label</label>
+            <input class="form-control" name="tabLabel" value="<%= feedback?.config?.tabLabel || 'Feedback' %>" required />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Form title</label>
+            <input class="form-control" name="formTitle" value="<%= feedback?.config?.formTitle || 'Share your feedback' %>" required />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Submit button label</label>
+            <input class="form-control" name="submitLabel" value="<%= feedback?.config?.submitLabel || 'Send feedback' %>" required />
+          </div>
 
-      <div class="col-md-6">
-        <label class="form-label">Confirmation title</label>
-        <input class="form-control" name="confirmationTitle" value="<%= feedback?.config?.confirmationTitle || 'Thanks for your feedback' %>" required />
-      </div>
-      <div class="col-md-6">
-        <label class="form-label">Confirmation message</label>
-        <input class="form-control" name="confirmationMessage" value="<%= feedback?.config?.confirmationMessage || 'Your response has been submitted.' %>" required />
-      </div>
+          <div class="col-md-6">
+            <label class="form-label">Confirmation title</label>
+            <input class="form-control" name="confirmationTitle" value="<%= feedback?.config?.confirmationTitle || 'Thanks for your feedback' %>" required />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Confirmation message</label>
+            <input class="form-control" name="confirmationMessage" value="<%= feedback?.config?.confirmationMessage || 'Your response has been submitted.' %>" required />
+          </div>
 
-      <div class="col-6 col-md-2">
-        <label class="form-label">Tab bg</label>
-        <input type="color" name="tabBackgroundColor" class="form-control form-control-color" value="<%= feedback?.config?.tabBackgroundColor || '#111827' %>" />
-      </div>
-      <div class="col-6 col-md-2">
-        <label class="form-label">Tab text</label>
-        <input type="color" name="tabTextColor" class="form-control form-control-color" value="<%= feedback?.config?.tabTextColor || '#ffffff' %>" />
-      </div>
-      <div class="col-6 col-md-2">
-        <label class="form-label">Panel bg</label>
-        <input type="color" name="panelBackgroundColor" class="form-control form-control-color" value="<%= feedback?.config?.panelBackgroundColor || '#ffffff' %>" />
-      </div>
-      <div class="col-6 col-md-2">
-        <label class="form-label">Panel text</label>
-        <input type="color" name="panelTextColor" class="form-control form-control-color" value="<%= feedback?.config?.panelTextColor || '#111827' %>" />
-      </div>
-      <div class="col-6 col-md-2">
-        <label class="form-label">Button bg</label>
-        <input type="color" name="buttonBackgroundColor" class="form-control form-control-color" value="<%= feedback?.config?.buttonBackgroundColor || '#111827' %>" />
-      </div>
-      <div class="col-6 col-md-2">
-        <label class="form-label">Button text</label>
-        <input type="color" name="buttonTextColor" class="form-control form-control-color" value="<%= feedback?.config?.buttonTextColor || '#ffffff' %>" />
-      </div>
-      <div class="col-md-4">
-        <label class="form-label">Button side</label>
-        <select class="form-select" name="displaySide">
-          <option value="right" <%= (feedback?.config?.displaySide || 'right') === 'right' ? 'selected' : '' %>>Right</option>
-          <option value="left" <%= feedback?.config?.displaySide === 'left' ? 'selected' : '' %>>Left</option>
-        </select>
-      </div>
-      <div class="col-md-4">
-        <label class="form-label">Vertical position</label>
-        <select class="form-select" name="verticalPosition">
-          <option value="bottom" <%= (feedback?.config?.verticalPosition || 'bottom') === 'bottom' ? 'selected' : '' %>>Bottom</option>
-          <option value="middle" <%= feedback?.config?.verticalPosition === 'middle' ? 'selected' : '' %>>Middle</option>
-          <option value="top" <%= feedback?.config?.verticalPosition === 'top' ? 'selected' : '' %>>Top</option>
-        </select>
-      </div>
-      <div class="col-md-4">
-        <label class="form-label">Vertical offset (px)</label>
-        <input type="number" min="0" max="200" step="1" class="form-control" name="offsetPx" value="<%= Number.isFinite(Number(feedback?.config?.offsetPx)) ? Number(feedback.config.offsetPx) : 0 %>" />
-      </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label">Tab bg</label>
+            <input type="color" name="tabBackgroundColor" class="form-control form-control-color" value="<%= feedback?.config?.tabBackgroundColor || '#111827' %>" />
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label">Tab text</label>
+            <input type="color" name="tabTextColor" class="form-control form-control-color" value="<%= feedback?.config?.tabTextColor || '#ffffff' %>" />
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label">Panel bg</label>
+            <input type="color" name="panelBackgroundColor" class="form-control form-control-color" value="<%= feedback?.config?.panelBackgroundColor || '#ffffff' %>" />
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label">Panel text</label>
+            <input type="color" name="panelTextColor" class="form-control form-control-color" value="<%= feedback?.config?.panelTextColor || '#111827' %>" />
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label">Button bg</label>
+            <input type="color" name="buttonBackgroundColor" class="form-control form-control-color" value="<%= feedback?.config?.buttonBackgroundColor || '#111827' %>" />
+          </div>
+          <div class="col-6 col-md-2">
+            <label class="form-label">Button text</label>
+            <input type="color" name="buttonTextColor" class="form-control form-control-color" value="<%= feedback?.config?.buttonTextColor || '#ffffff' %>" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Button side</label>
+            <select class="form-select" name="displaySide">
+              <option value="right" <%= (feedback?.config?.displaySide || 'right') === 'right' ? 'selected' : '' %>>Right</option>
+              <option value="left" <%= feedback?.config?.displaySide === 'left' ? 'selected' : '' %>>Left</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Vertical position</label>
+            <select class="form-select" name="verticalPosition">
+              <option value="bottom" <%= (feedback?.config?.verticalPosition || 'bottom') === 'bottom' ? 'selected' : '' %>>Bottom</option>
+              <option value="middle" <%= feedback?.config?.verticalPosition === 'middle' ? 'selected' : '' %>>Middle</option>
+              <option value="top" <%= feedback?.config?.verticalPosition === 'top' ? 'selected' : '' %>>Top</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Vertical offset (px)</label>
+            <input type="number" min="0" max="200" step="1" class="form-control" name="offsetPx" value="<%= Number.isFinite(Number(feedback?.config?.offsetPx)) ? Number(feedback.config.offsetPx) : 0 %>" />
+          </div>
 
-      <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <label class="form-label m-0">Custom fields</label>
-          <button class="btn btn-sm btn-outline-primary" type="button" id="add-feedback-field">Add field</button>
-        </div>
-        <div id="feedback-fields" class="d-grid gap-3">
-          <% const existingFields = fields.length ? fields : [{ id: '', label: '', type: 'text', required: true, placeholder: '', helpText: '', options: [] }]; %>
-          <% existingFields.forEach((field, idx) => { %>
-            <div class="border rounded p-3 feedback-field-row">
-              <input type="hidden" name="fieldId" value="<%= field.id || '' %>" />
-              <div class="row g-2">
-                <div class="col-md-3">
-                  <label class="form-label">Label</label>
-                  <input class="form-control" name="fieldLabel" value="<%= field.label || '' %>" required />
-                </div>
-                <div class="col-md-2">
-                  <label class="form-label">Type</label>
-                  <select class="form-select feedback-type-select" name="fieldType">
-                    <option value="text" <%= field.type === 'text' ? 'selected' : '' %>>Text</option>
-                    <option value="multiline" <%= field.type === 'multiline' ? 'selected' : '' %>>Multiline text</option>
-                    <option value="select" <%= field.type === 'select' ? 'selected' : '' %>>Select</option>
-                    <option value="email" <%= field.type === 'email' ? 'selected' : '' %>>Email</option>
-                  </select>
-                </div>
-                <div class="col-md-2">
-                  <label class="form-label">Required?</label>
-                  <select class="form-select" name="fieldRequired">
-                    <option value="true" <%= field.required ? 'selected' : '' %>>Mandatory</option>
-                    <option value="false" <%= !field.required ? 'selected' : '' %>>Optional</option>
-                  </select>
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label">Placeholder</label>
-                  <input class="form-control" name="fieldPlaceholder" value="<%= field.placeholder || '' %>" />
-                </div>
-                <div class="col-md-1 d-grid">
-                  <label class="form-label">&nbsp;</label>
-                  <button type="button" class="btn btn-outline-danger remove-field">×</button>
-                </div>
-                <div class="col-md-12">
-                  <div class="d-flex gap-2 justify-content-end">
-                    <button type="button" class="btn btn-outline-secondary btn-sm move-field-up">Move up</button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm move-field-down">Move down</button>
+          <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="form-label m-0">Custom fields</label>
+              <button class="btn btn-sm btn-outline-primary" type="button" id="add-feedback-field">Add field</button>
+            </div>
+            <div id="feedback-fields" class="d-grid gap-3">
+              <% const existingFields = fields.length ? fields : [{ id: '', label: '', type: 'text', required: true, placeholder: '', helpText: '', options: [] }]; %>
+              <% existingFields.forEach((field) => { %>
+                <div class="border rounded p-3 feedback-field-row">
+                  <input type="hidden" name="fieldId" value="<%= field.id || '' %>" />
+                  <div class="row g-2">
+                    <div class="col-md-3">
+                      <label class="form-label">Label</label>
+                      <input class="form-control" name="fieldLabel" value="<%= field.label || '' %>" required />
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label">Type</label>
+                      <select class="form-select feedback-type-select" name="fieldType">
+                        <option value="text" <%= field.type === 'text' ? 'selected' : '' %>>Text</option>
+                        <option value="multiline" <%= field.type === 'multiline' ? 'selected' : '' %>>Multiline text</option>
+                        <option value="select" <%= field.type === 'select' ? 'selected' : '' %>>Select</option>
+                        <option value="email" <%= field.type === 'email' ? 'selected' : '' %>>Email</option>
+                      </select>
+                    </div>
+                    <div class="col-md-2">
+                      <label class="form-label">Required?</label>
+                      <select class="form-select" name="fieldRequired">
+                        <option value="true" <%= field.required ? 'selected' : '' %>>Mandatory</option>
+                        <option value="false" <%= !field.required ? 'selected' : '' %>>Optional</option>
+                      </select>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label">Placeholder</label>
+                      <input class="form-control" name="fieldPlaceholder" value="<%= field.placeholder || '' %>" />
+                    </div>
+                    <div class="col-md-1 d-grid">
+                      <label class="form-label">&nbsp;</label>
+                      <button type="button" class="btn btn-outline-danger remove-field">×</button>
+                    </div>
+                    <div class="col-md-12">
+                      <div class="d-flex gap-2 justify-content-end">
+                        <button type="button" class="btn btn-outline-secondary btn-sm move-field-up">Move up</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm move-field-down">Move down</button>
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Help text</label>
+                      <input class="form-control" name="fieldHelpText" value="<%= field.helpText || '' %>" />
+                    </div>
+                    <div class="col-md-6 feedback-options-wrap <%= field.type === 'select' ? '' : 'd-none' %>">
+                      <label class="form-label">Select options (one per line)</label>
+                      <textarea class="form-control" rows="2" name="fieldOptions"><%= Array.isArray(field.options) ? field.options.join('\n') : '' %></textarea>
+                    </div>
                   </div>
                 </div>
-                <div class="col-md-6">
-                  <label class="form-label">Help text</label>
-                  <input class="form-control" name="fieldHelpText" value="<%= field.helpText || '' %>" />
-                </div>
-                <div class="col-md-6 feedback-options-wrap <%= field.type === 'select' ? '' : 'd-none' %>">
-                  <label class="form-label">Select options (one per line)</label>
-                  <textarea class="form-control" rows="2" name="fieldOptions"><%= Array.isArray(field.options) ? field.options.join('\n') : '' %></textarea>
-                </div>
-              </div>
+              <% }) %>
             </div>
-          <% }) %>
+          </div>
+
+          <div class="col-12">
+            <button class="btn btn-primary">Save feedback form</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-5">
+    <div class="card sticky-xl-top" style="top: 1rem;">
+      <div class="card-header fw-semibold">Live preview</div>
+      <div class="card-body">
+        <div class="small text-muted mb-2">Preview updates as you edit settings and fields.</div>
+        <div class="border rounded p-3" id="feedback-preview-shell">
+          <div class="d-flex mb-2" id="feedback-preview-tab-wrap">
+            <button type="button" class="btn btn-sm" id="feedback-preview-tab"></button>
+          </div>
+          <div class="border rounded p-3" id="feedback-preview-panel">
+            <h6 class="mb-3" id="feedback-preview-title"></h6>
+            <div id="feedback-preview-fields" class="d-grid gap-2"></div>
+            <button type="button" class="btn btn-sm mt-3" id="feedback-preview-submit"></button>
+            <div class="border rounded p-2 mt-3 d-none" id="feedback-preview-confirmation">
+              <div class="fw-semibold" id="feedback-preview-confirmation-title"></div>
+              <div class="small" id="feedback-preview-confirmation-message"></div>
+            </div>
+          </div>
         </div>
       </div>
-
-      <div class="col-12">
-        <button class="btn btn-primary">Save feedback form</button>
-      </div>
-    </form>
+    </div>
   </div>
 </div>
 
 <script>
   (function () {
+    const form = document.getElementById('feedback-config-form');
     const fieldsWrap = document.getElementById('feedback-fields');
     const addBtn = document.getElementById('add-feedback-field');
-    if (!fieldsWrap || !addBtn) return;
+    if (!form || !fieldsWrap || !addBtn) return;
+
+    const preview = {
+      tabWrap: document.getElementById('feedback-preview-tab-wrap'),
+      tab: document.getElementById('feedback-preview-tab'),
+      panel: document.getElementById('feedback-preview-panel'),
+      title: document.getElementById('feedback-preview-title'),
+      fields: document.getElementById('feedback-preview-fields'),
+      submit: document.getElementById('feedback-preview-submit'),
+      confirmation: document.getElementById('feedback-preview-confirmation'),
+      confirmationTitle: document.getElementById('feedback-preview-confirmation-title'),
+      confirmationMessage: document.getElementById('feedback-preview-confirmation-message'),
+    };
+
+    function readValue(name, fallback) {
+      const input = form.querySelector(`[name="${name}"]`);
+      return input ? String(input.value || '').trim() || fallback : fallback;
+    }
+
+    function getFieldRows() {
+      return Array.from(fieldsWrap.querySelectorAll('.feedback-field-row'));
+    }
+
+    function renderPreview() {
+      const tabLabel = readValue('tabLabel', 'Feedback');
+      const formTitle = readValue('formTitle', 'Share your feedback');
+      const submitLabel = readValue('submitLabel', 'Send feedback');
+      const confirmationTitle = readValue('confirmationTitle', 'Thanks for your feedback');
+      const confirmationMessage = readValue('confirmationMessage', 'Your response has been submitted.');
+
+      const tabBackgroundColor = readValue('tabBackgroundColor', '#111827');
+      const tabTextColor = readValue('tabTextColor', '#ffffff');
+      const panelBackgroundColor = readValue('panelBackgroundColor', '#ffffff');
+      const panelTextColor = readValue('panelTextColor', '#111827');
+      const buttonBackgroundColor = readValue('buttonBackgroundColor', '#111827');
+      const buttonTextColor = readValue('buttonTextColor', '#ffffff');
+      const displaySide = readValue('displaySide', 'right');
+
+      preview.tabWrap.classList.remove('justify-content-start', 'justify-content-end');
+      preview.tabWrap.classList.add(displaySide === 'left' ? 'justify-content-start' : 'justify-content-end');
+
+      preview.tab.textContent = tabLabel;
+      preview.tab.style.backgroundColor = tabBackgroundColor;
+      preview.tab.style.color = tabTextColor;
+      preview.title.textContent = formTitle;
+      preview.submit.textContent = submitLabel;
+
+      preview.panel.style.backgroundColor = panelBackgroundColor;
+      preview.panel.style.color = panelTextColor;
+      preview.submit.style.backgroundColor = buttonBackgroundColor;
+      preview.submit.style.color = buttonTextColor;
+      preview.confirmationTitle.textContent = confirmationTitle;
+      preview.confirmationMessage.textContent = confirmationMessage;
+
+      const fieldsHtml = getFieldRows().map((row, index) => {
+        const label = row.querySelector('[name="fieldLabel"]')?.value?.trim() || `Field ${index + 1}`;
+        const type = row.querySelector('[name="fieldType"]')?.value || 'text';
+        const required = row.querySelector('[name="fieldRequired"]')?.value === 'true';
+        const placeholder = row.querySelector('[name="fieldPlaceholder"]')?.value?.trim() || '';
+        const helpText = row.querySelector('[name="fieldHelpText"]')?.value?.trim() || '';
+        const optionsText = row.querySelector('[name="fieldOptions"]')?.value || '';
+        const options = optionsText.split('\n').map((entry) => entry.trim()).filter(Boolean);
+
+        let fieldControl = `<input class="form-control form-control-sm" disabled placeholder="${placeholder || ''}" />`;
+
+        if (type === 'multiline') {
+          fieldControl = `<textarea class="form-control form-control-sm" rows="2" disabled placeholder="${placeholder || ''}"></textarea>`;
+        } else if (type === 'email') {
+          fieldControl = `<input class="form-control form-control-sm" type="email" disabled placeholder="${placeholder || 'name@example.com'}" />`;
+        } else if (type === 'select') {
+          const optionMarkup = options.length
+            ? options.map((option) => `<option>${option}</option>`).join('')
+            : '<option>No options added</option>';
+          fieldControl = `<select class="form-select form-select-sm" disabled>${optionMarkup}</select>`;
+        }
+
+        return `
+          <div>
+            <div class="small fw-semibold mb-1">${label}${required ? ' *' : ''}</div>
+            ${fieldControl}
+            ${helpText ? `<div class="small text-muted mt-1">${helpText}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      preview.fields.innerHTML = fieldsHtml || '<div class="small text-muted">No fields configured yet.</div>';
+      preview.confirmation.classList.add('d-none');
+    }
 
     function bindRow(row) {
       const removeBtn = row.querySelector('.remove-field');
@@ -170,6 +285,7 @@
         removeBtn.addEventListener('click', function () {
           if (fieldsWrap.querySelectorAll('.feedback-field-row').length <= 1) return;
           row.remove();
+          renderPreview();
         });
       }
 
@@ -178,6 +294,7 @@
           const previous = row.previousElementSibling;
           if (!previous) return;
           fieldsWrap.insertBefore(row, previous);
+          renderPreview();
         });
       }
 
@@ -186,6 +303,7 @@
           const next = row.nextElementSibling;
           if (!next) return;
           fieldsWrap.insertBefore(next, row);
+          renderPreview();
         });
       }
 
@@ -194,6 +312,7 @@
           const isSelect = typeSelect.value === 'select';
           optionsWrap.classList.toggle('d-none', !isSelect);
           if (!isSelect && optionsInput) optionsInput.value = '';
+          renderPreview();
         });
       }
     }
@@ -216,8 +335,17 @@
       `;
       fieldsWrap.appendChild(row);
       bindRow(row);
+      renderPreview();
+    });
+
+    form.addEventListener('input', renderPreview);
+    form.addEventListener('change', renderPreview);
+
+    preview.submit.addEventListener('click', function () {
+      preview.confirmation.classList.remove('d-none');
     });
 
     fieldsWrap.querySelectorAll('.feedback-field-row').forEach(bindRow);
+    renderPreview();
   })();
 </script>
