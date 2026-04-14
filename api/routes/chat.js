@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { resolveWorkspaceAccess } from "../lib/workspace-auth.js";
+import { enforceRouteRateLimit, getRouteActorKey } from "../lib/rate-limit.js";
 
 const MAX_MESSAGE_LENGTH = 2000;
 const WINDOW_MS = 60 * 1000;
@@ -187,96 +188,17 @@ Rules:
   return extractOutputText(rewriteResponse);
 }
 
-function getClientIp(request) {
-  const xff = request.headers["x-forwarded-for"];
-  if (xff) {
-    return String(xff).split(",")[0].trim();
-  }
-
-  const realIp = request.headers["x-real-ip"];
-  if (realIp) {
-    return String(realIp).trim();
-  }
-
-  return request.ip || "unknown";
-}
-
-function sha256(value) {
-  return crypto.createHash("sha256").update(value).digest("hex");
-}
-
 function getActorKey(request, threadId, workspaceId) {
-  const ip = getClientIp(request);
-  return sha256(`${workspaceId}:${ip}:${threadId}`);
+  return getRouteActorKey(request, workspaceId, `chat:${threadId}`);
 }
 
 async function enforceRateLimit(db, actorKey) {
-  const collection = db.collection("chat_rate_limits");
-  const now = new Date();
-  const windowStart = new Date(now.getTime() - WINDOW_MS);
-  const expiresAt = new Date(now.getTime() + WINDOW_MS);
-
-  const result = await collection.findOneAndUpdate(
-    { actorKey },
-    [
-      {
-        $set: {
-          actorKey,
-          updatedAt: now,
-          expiresAt,
-          requestsInWindow: {
-            $cond: [
-              { $lt: ["$windowStartedAt", windowStart] },
-              1,
-              { $add: [{ $ifNull: ["$requestsInWindow", 0] }, 1] }
-            ]
-          },
-          windowStartedAt: {
-            $cond: [
-              { $lt: ["$windowStartedAt", windowStart] },
-              now,
-              "$windowStartedAt"
-            ]
-          },
-          lastRequestAt: now,
-          secondsSinceLastRequest: {
-            $cond: [
-              { $ifNull: ["$lastRequestAt", false] },
-              {
-                $divide: [{ $subtract: [now, "$lastRequestAt"] }, 1000]
-              },
-              999999
-            ]
-          }
-        }
-      }
-    ],
-    {
-      upsert: true,
-      returnDocument: "after"
-    }
-  );
-
-  const doc = result?.value || result;
-
-  const tooManyRequests = doc.requestsInWindow > MAX_REQUESTS_PER_WINDOW;
-  const tooFast =
-    typeof doc.secondsSinceLastRequest === "number" &&
-    doc.secondsSinceLastRequest < MIN_SECONDS_BETWEEN_MESSAGES;
-
-  if (tooManyRequests || tooFast) {
-    const retryAfterSeconds = tooFast
-      ? Math.ceil(MIN_SECONDS_BETWEEN_MESSAGES - doc.secondsSinceLastRequest)
-      : Math.ceil(WINDOW_MS / 1000);
-
-    return {
-      allowed: false,
-      retryAfterSeconds: Math.max(1, retryAfterSeconds),
-      reason: tooFast ? "cooldown" : "rate_limit"
-    };
-  }
-
-  return { allowed: true };
+  return enforceRouteRateLimit(db, actorKey, {
+    collectionName: "chat_rate_limits",
+    windowMs: WINDOW_MS,
+    maxRequestsPerWindow: MAX_REQUESTS_PER_WINDOW,
+    minSecondsBetweenRequests: MIN_SECONDS_BETWEEN_MESSAGES
+  });
 }
 
 function getWorkspaceVectorStoreIds(workspace) {
