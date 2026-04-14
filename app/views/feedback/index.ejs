@@ -132,6 +132,12 @@
                   <label class="form-label">&nbsp;</label>
                   <button type="button" class="btn btn-outline-danger remove-field">×</button>
                 </div>
+                <div class="col-md-12">
+                  <div class="d-flex gap-2 justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary btn-sm move-field-up">Move up</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm move-field-down">Move down</button>
+                  </div>
+                </div>
                 <div class="col-md-6">
                   <label class="form-label">Help text</label>
                   <input class="form-control" name="fieldHelpText" value="<%= field.helpText || '' %>" />
@@ -161,6 +167,8 @@
 
     function bindRow(row) {
       const removeBtn = row.querySelector('.remove-field');
+      const moveUpBtn = row.querySelector('.move-field-up');
+      const moveDownBtn = row.querySelector('.move-field-down');
       const typeSelect = row.querySelector('.feedback-type-select');
       const optionsWrap = row.querySelector('.feedback-options-wrap');
       const optionsInput = row.querySelector('textarea[name="fieldOptions"]');
@@ -169,6 +177,22 @@
         removeBtn.addEventListener('click', function () {
           if (fieldsWrap.querySelectorAll('.feedback-field-row').length <= 1) return;
           row.remove();
+        });
+      }
+
+      if (moveUpBtn) {
+        moveUpBtn.addEventListener('click', function () {
+          const previous = row.previousElementSibling;
+          if (!previous) return;
+          fieldsWrap.insertBefore(row, previous);
+        });
+      }
+
+      if (moveDownBtn) {
+        moveDownBtn.addEventListener('click', function () {
+          const next = row.nextElementSibling;
+          if (!next) return;
+          fieldsWrap.insertBefore(next, row);
         });
       }
 
@@ -192,6 +216,7 @@
           <div class="col-md-2"><label class="form-label">Required?</label><select class="form-select" name="fieldRequired"><option value="true">Mandatory</option><option value="false">Optional</option></select></div>
           <div class="col-md-4"><label class="form-label">Placeholder</label><input class="form-control" name="fieldPlaceholder" /></div>
           <div class="col-md-1 d-grid"><label class="form-label">&nbsp;</label><button type="button" class="btn btn-outline-danger remove-field">×</button></div>
+          <div class="col-md-12"><div class="d-flex gap-2 justify-content-end"><button type="button" class="btn btn-outline-secondary btn-sm move-field-up">Move up</button><button type="button" class="btn btn-outline-secondary btn-sm move-field-down">Move down</button></div></div>
           <div class="col-md-6"><label class="form-label">Help text</label><input class="form-control" name="fieldHelpText" /></div>
           <div class="col-md-6 feedback-options-wrap d-none"><label class="form-label">Select options (one per line)</label><textarea class="form-control" rows="2" name="fieldOptions"></textarea></div>
         </div>
