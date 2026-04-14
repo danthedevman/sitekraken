@@ -31,6 +31,10 @@
   const bulkDeleteMethod = String(bulkDelete?.method || 'POST').toUpperCase();
   const bulkDeleteInputName = String(bulkDelete?.inputName || 'ids');
   const bulkDeleteConfirmMessage = String(bulkDelete?.confirmMessage || 'Delete selected rows? This action cannot be undone.');
+  const newEntryButtonConfig = typeof newEntryButton !== 'undefined' ? newEntryButton : null;
+  const showNewEntryButton = Boolean(newEntryButtonConfig?.href);
+  const newEntryButtonHref = showNewEntryButton ? String(newEntryButtonConfig.href) : '';
+  const newEntryButtonLabel = String(newEntryButtonConfig?.label || 'New entry');
 
   const queryForPage = (nextPage, sort = serverSort, direction = serverDirection) => {
     const params = new URLSearchParams();
@@ -62,6 +66,9 @@
         </div>
 
         <div class="d-flex align-items-center gap-2">
+          <% if (showNewEntryButton) { %>
+            <a href="<%= newEntryButtonHref %>" class="btn btn-primary btn-sm"><%= newEntryButtonLabel %></a>
+          <% } %>
           <input type="hidden" name="<%= pageSizeKey %>" value="<%= serverPageSize %>" />
           <input type="hidden" name="<%= pageKey %>" value="1" />
           <% if (serverSearch) { %>
@@ -76,7 +83,12 @@
           <span class="input-group-text"><i class="bi bi-search"></i></span>
           <input type="search" class="form-control" data-table-search placeholder="Search rows" aria-label="Search table" />
         </div>
-        <small class="text-muted"><span data-table-summary>0</span> result(s)</small>
+        <div class="d-flex align-items-center gap-2">
+          <% if (showNewEntryButton) { %>
+            <a href="<%= newEntryButtonHref %>" class="btn btn-primary btn-sm"><%= newEntryButtonLabel %></a>
+          <% } %>
+          <small class="text-muted"><span data-table-summary>0</span> result(s)</small>
+        </div>
       </div>
     <% } %>
 

@@ -184,6 +184,10 @@ export async function index(req, res) {
     active: 'announcements',
     banners,
     items,
+    newEntryButton: {
+      label: 'New banner',
+      href: `/workspaces/${workspace._id}/announcements/new`
+    },
     tableState: {
       search,
       sort: sortKey,
