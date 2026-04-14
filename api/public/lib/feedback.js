@@ -193,7 +193,7 @@
         border-radius: 10px 10px 0 0;
         cursor: pointer;
         white-space: nowrap;
-        /*transform-origin: ${config.displaySide === 'right' ? 'top right' : 'top left'};*/
+        transform-origin: ${config.displaySide === 'right' ? 'top right' : 'top left'};
         box-shadow: 0 6px 20px rgba(0,0,0,0.2);
         background: ${config.tabBackgroundColor};
         color: ${config.tabTextColor};
