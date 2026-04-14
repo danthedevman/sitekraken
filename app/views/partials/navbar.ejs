@@ -98,14 +98,27 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="embedScriptModalLabel">Embeddable script tag</h5>
+          <h5 class="modal-title" id="embedScriptModalLabel">Embed code</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <p class="small text-muted mb-2">Copy and paste this snippet into your site.</p>
+          <div class="mb-3">
+            <label class="form-label small text-muted mb-1">Embed API key</label>
+            <div class="bg-light border rounded p-2 small">
+              <code><%= workspace.apiKey %></code>
+            </div>
+          </div>
           <textarea id="navbar-embed-script" class="form-control small" rows="4" readonly><script src="<%= appUrl ? `${appUrl}/public/lib/embed.js` : '/public/lib/embed.js' %>" data-api-key="<%= workspace.apiKey %>"></script></textarea>
         </div>
         <div class="modal-footer">
+          <form
+            method="POST"
+            action="/workspaces/<%= workspace._id %>/chatbot/regenerate-key"
+            onsubmit="return confirm('Regenerate embed API key? Existing embeds will stop working until updated.');"
+          >
+            <button type="submit" class="btn btn-outline-warning btn-sm">Regenerate API key</button>
+          </form>
           <button
             type="button"
             class="btn btn-primary btn-sm"
