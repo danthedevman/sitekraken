@@ -3,7 +3,6 @@ import { Router } from 'express';
 import { ensureAuth } from '../middleware/auth.js';
 import {
   bulkDestroySubmissions,
-  confirmation,
   index,
   showSubmission,
   submissions,
@@ -19,6 +18,5 @@ router.post('/toggle-enabled', ensureAuth, toggleEnabled);
 router.get('/submissions', ensureAuth, submissions);
 router.post('/submissions/bulk-delete', ensureAuth, bulkDestroySubmissions);
 router.get('/submissions/:submissionId', ensureAuth, showSubmission);
-router.get('/confirmation', ensureAuth, confirmation);
 
 export default router;

@@ -351,21 +351,6 @@ export async function bulkDestroySubmissions(req, res) {
   return res.redirect(`/workspaces/${workspace._id}/feedback/submissions`);
 }
 
-export async function confirmation(req, res) {
-  const workspace = await hydrateWorkspace(req);
-
-  if (!workspace) {
-    req.flash('error', 'Workspace not found');
-    return res.redirect('/workspaces');
-  }
-
-  res.render('feedback/confirmation', {
-    workspace,
-    active: 'feedback',
-    feedback: workspace.feedback || {},
-  });
-}
-
 export async function toggleEnabled(req, res) {
   const { workspaces } = getCollections();
   const workspace = await hydrateWorkspace(req);
