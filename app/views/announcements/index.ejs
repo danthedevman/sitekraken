@@ -1,16 +1,3 @@
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <div>
-    <h4 class="m-0">Banners</h4>
-    <div class="text-muted small">Manage announcement banners for <%= workspace.name %>.</div>
-  </div>
-  <div class="d-flex align-items-center gap-2">
-    <span class="badge <%= banners?.enabled ? 'text-bg-success' : 'text-bg-secondary' %>">
-      <%= banners?.enabled ? 'Enabled' : 'Disabled' %>
-    </span>
-    <a class="btn btn-primary btn-sm" href="/workspaces/<%= workspace._id %>/announcements/new">New banner</a>
-  </div>
-</div>
-
 <div class="card mb-3">
   <div class="card-body">
     <form method="POST" action="/workspaces/<%= workspace._id %>/announcements" class="row g-3 align-items-end">
