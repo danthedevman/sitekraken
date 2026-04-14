@@ -1,5 +1,11 @@
 import { ObjectId } from 'mongodb';
 import { resolveWorkspaceAccess } from '../lib/workspace-auth.js';
+import { enforceRouteRateLimit, getRouteActorKey } from '../lib/rate-limit.js';
+
+const MAX_CONTENT_LENGTH = 40_000;
+const WINDOW_MS = 60 * 1000;
+const MAX_REQUESTS_PER_WINDOW = 20;
+const MIN_SECONDS_BETWEEN_SUBMISSIONS = 2;
 
 function cleanString(value, max = 600) {
   return String(value || '').trim().slice(0, max);
@@ -35,6 +41,14 @@ function validateField(field, value) {
 
 export default async function feedbackRoutes(fastify) {
   fastify.post('/submissions', async function handler(request, reply) {
+    const contentLength = Number(request.headers['content-length'] || '0');
+    if (contentLength > MAX_CONTENT_LENGTH) {
+      return reply.code(413).send({
+        success: false,
+        error: 'Request too large.',
+      });
+    }
+
     const access = await resolveWorkspaceAccess(request, fastify.mongoDb);
 
     if (!access.ok) {
@@ -42,6 +56,24 @@ export default async function feedbackRoutes(fastify) {
         success: false,
         error: access.error,
       });
+    }
+
+    const actorKey = getRouteActorKey(request, String(access.workspace?._id), 'feedback:submissions');
+    const limit = await enforceRouteRateLimit(fastify.mongoDb, actorKey, {
+      collectionName: 'feedback_rate_limits',
+      windowMs: WINDOW_MS,
+      maxRequestsPerWindow: MAX_REQUESTS_PER_WINDOW,
+      minSecondsBetweenRequests: MIN_SECONDS_BETWEEN_SUBMISSIONS,
+    });
+
+    if (!limit.allowed) {
+      return reply
+        .code(429)
+        .header('Retry-After', String(limit.retryAfterSeconds))
+        .send({
+          success: false,
+          error: 'Too many requests. Please slow down.',
+        });
     }
 
     const workspace = access.workspace;

@@ -1,5 +1,10 @@
 import { ObjectId } from "mongodb";
 import { resolveWorkspaceAccess } from "../lib/workspace-auth.js";
+import { enforceRouteRateLimit, getRouteActorKey } from "../lib/rate-limit.js";
+
+const MAX_CONTENT_LENGTH = 180_000;
+const WINDOW_MS = 60 * 1000;
+const MAX_REQUESTS_PER_WINDOW = 60;
 
 const ALLOWED_LEVELS = new Set(["debug", "info", "warn", "error", "fatal"]);
 const ALLOWED_TYPES = new Set([
@@ -60,6 +65,14 @@ function normalizeLog(raw = {}, context = {}) {
 
 export default async function logsRoutes(fastify) {
   fastify.post("/events", async function handler(request, reply) {
+    const contentLength = Number(request.headers["content-length"] || "0");
+    if (contentLength > MAX_CONTENT_LENGTH) {
+      return reply.code(413).send({
+        success: false,
+        error: "Request too large."
+      });
+    }
+
     const access = await resolveWorkspaceAccess(request, fastify.mongoDb);
 
     if (!access.ok) {
@@ -67,6 +80,23 @@ export default async function logsRoutes(fastify) {
         success: false,
         error: access.error
       });
+    }
+
+    const actorKey = getRouteActorKey(request, String(access.workspace?._id), "logs:events");
+    const limit = await enforceRouteRateLimit(fastify.mongoDb, actorKey, {
+      collectionName: "logs_rate_limits",
+      windowMs: WINDOW_MS,
+      maxRequestsPerWindow: MAX_REQUESTS_PER_WINDOW
+    });
+
+    if (!limit.allowed) {
+      return reply
+        .code(429)
+        .header("Retry-After", String(limit.retryAfterSeconds))
+        .send({
+          success: false,
+          error: "Too many requests. Please slow down."
+        });
     }
 
     const payload = request.body || {};
